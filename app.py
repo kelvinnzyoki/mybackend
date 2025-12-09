@@ -3,6 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 import re
+conn = psycopg2.connect(DATABASE_URL)
+import os
+
+app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 app = Flask(__name__)
 CORS(app)  # Allow communication with frontend
