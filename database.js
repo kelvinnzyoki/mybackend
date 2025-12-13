@@ -1,9 +1,9 @@
-require("dotenv").config();
 
-const sqlite3 = require("sqlite3").verbose();
+
+const pg = require("pg").verbose();
 
 // Create or open the database file
-const db = new sqlite3.Database(process.env.DB_PATH, (err) => {
+const db = new pg.Database(process.env.DB_PATH, (err) => {
   if (err) {
     console.error("Error opening database:", err.message);
   } else {
