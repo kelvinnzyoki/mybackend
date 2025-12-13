@@ -7,7 +7,7 @@
     "cors": "^2.8.5",      
     "helmet": "^7.1.0",    
     "dotenv": "^16.4.5" 
-    // ... all other required packages (like mongoose, etc.)
+
   },
   "main": "server.js",
   "scripts": {
