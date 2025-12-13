@@ -1,9 +1,10 @@
 
+const PORT = process.env.PORT || 3000;
 const express = require("express");
 const app = express();
 const helmet = require("helmet");
 const cors = require("cors");
-const PORT = process.env.PORT || 3000;
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -14,10 +15,6 @@ app.get("/", (req, res) => {
   res.send("Hello backend");
 });
 
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
 // -------------------------------------
 // SIGN UP ENDPOINT
@@ -80,4 +77,6 @@ app.post("/record", (req, res) => {
     message: "Points recorded successfully",
     data: { dataToRecord }
   });
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
