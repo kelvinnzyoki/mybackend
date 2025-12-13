@@ -1,15 +1,27 @@
+const { Pool } = require('pg');
 
+// 1. Get the connection string from environment variables
+const connectionString = process.env.DATABASE_URL; 
 
-const pg = require("pg").verbose();
+if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is not set.');
+}
 
-// Create or open the database file
-const db = new pg.Database(process.env.DB_PATH, (err) => {
-  if (err) {
-    console.error("Error opening database:", err.message);
-  } else {
-    console.log("Connected to SQLite database");
-  }
+// 2. The 'pg' Pool object will use the connectionString
+// or the individual PG* variables automatically.
+const pool = new Pool({
+    connectionString: connectionString, 
+    // You may need to add an SSL configuration for production:
+    ssl: {
+        rejectUnauthorized: false 
+    }
 });
+
+module.exports = {
+    query: (text, params) => pool.query(text, params),
+}
+
+
 
 // Create a table
 db.run(
