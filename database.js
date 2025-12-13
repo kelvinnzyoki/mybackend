@@ -3,7 +3,7 @@
 const { createTables } = require('./db/init');
 const app = require('./app'); // Your Express app setup
 
-const PORT = process.env.PORT || 3000;
+
 
 // Immediately call the function to ensure the database schema is set up
 createTables()
