@@ -1,61 +1,56 @@
-const { Pool } = require('pg');
+// server.js (Main Application File)
 
-// 1. Get the connection string from environment variables
-const connectionString = process.env.DATABASE_URL; 
+const { createTables } = require('./db/init');
+const app = require('./app'); // Your Express app setup
 
-if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is not set.');
-}
+const PORT = process.env.PORT || 3000;
 
-// 2. The 'pg' Pool object will use the connectionString
-// or the individual PG* variables automatically.
-const pool = new Pool({
-    connectionString: connectionString, 
-    // You may need to add an SSL configuration for production:
-    ssl: {
-        rejectUnauthorized: false 
-    }
-});
+// Immediately call the function to ensure the database schema is set up
+createTables()
+    .then(() => {
+        // Only start the HTTP server if the database connection and tables are successful
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error('CRITICAL ERROR: Failed to start server due to database initialization failure.', err);
+        // Exit the process if the database cannot be set up
+        process.exit(1); 
+    });
 
-module.exports = {
-    query: (text, params) => pool.query(text, params),
-}
-
-
-
-// Create a table
-db.run(
-  `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT,
-      email TEXT UNIQUE,
-      password TEXT
-   )`,
-  (err) => {
-    if (err) console.error("Error creating table:", err.message);
-  }
-);
-
-module.exports = db;
+const { pool } = require('./db'); // Import the pg pool
 
 // Route: Get all users
-app.get("/users", (req, res) => {
-  db.all(`SELECT * FROM users`, [], (err, rows) => {
-    if (err) {
-      return res.status(400).json({ error: err.message });
-    }
-    res.json(rows);
-  });
+app.get("/users", async (req, res) => {
+  try {
+    // pool.query() returns a promise that resolves to a result object
+    const result = await pool.query(`SELECT * FROM users`);
+    // Rows are in the result.rows property
+    res.json(result.rows); 
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // Route: Get 1 user by email
-app.get("/user/:email", (req, res) => {
+app.get("/user/:email", async (req, res) => {
   const email = req.params.email;
 
-  db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, row) => {
-    if (err) return res.status(400).json({ error: err.message });
+  try {
+    // 1. Use '$1' for the first parameter
+    // 2. Pass the parameters in the second argument array
+    const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
+    
+    const user = result.rows[0]; // PostgreSQL returns an array of rows
 
-    res.json(row || {});
-    res.json({ message: "Signup successful", user: { username, email } });
-  });
+    if (!user) {
+      return res.json({}); // Return empty object if not found
+    }
+
+    res.json(user);
+
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
