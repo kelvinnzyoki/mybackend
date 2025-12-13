@@ -12,8 +12,3 @@
   "license": "ISC",
   "type": "commonjs"
 }
-{
-  "scripts": {
-    "start": "node server.js"
-  }
-}
