@@ -1,56 +1,50 @@
-// server.js (Main Application File)
+// 1. DEFINE PORT AND IMPORT CORE MODULES
+const PORT = process.env.PORT || 5432; // FIX: Define PORT
+const { createTables, pool } = require('./db/init'); // FIX: Import pool and createTables from a consolidated file
+const app = require('./app'); // Your Express app instance (where you have app.use(express.json()) and CORS)
 
-const { createTables } = require('./db/init');
-const app = require('./app'); // Your Express app setup
-
-
-
-// Immediately call the function to ensure the database schema is set up
+// 2. DATABASE INITIALIZATION AND SERVER STARTUP
 createTables()
     .then(() => {
-        // Only start the HTTP server if the database connection and tables are successful
+        console.log('Database tables initialized successfully.');
+        
+        // 3. DEFINE ROUTES *AFTER* INITIALIZATION
+        
+        // Route: Get all users
+        app.get("/users", async (req, res) => {
+            try {
+                const result = await pool.query(`SELECT * FROM users`);
+                res.json(result.rows);
+            } catch (err) {
+                console.error("Error fetching users:", err); // Better logging
+                res.status(500).json({ error: "Internal Server Error" }); // More generic error for frontend
+            }
+        });
+
+        // Route: Get 1 user by email
+        app.get("/user/:email", async (req, res) => {
+            const email = req.params.email;
+            try {
+                const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
+                const user = result.rows[0];
+
+                if (!user) {
+                    return res.status(404).json({ message: "User not found" }); // Return 404 for clarity
+                }
+
+                res.json(user);
+            } catch (err) {
+                console.error("Error fetching user by email:", err);
+                res.status(500).json({ error: "Internal Server Error" });
+            }
+        });
+
+        // 4. START SERVER
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
     })
     .catch((err) => {
         console.error('CRITICAL ERROR: Failed to start server due to database initialization failure.', err);
-        // Exit the process if the database cannot be set up
-        process.exit(1); 
+        process.exit(1);
     });
-
-const { pool } = require('./db'); // Import the pg pool
-
-// Route: Get all users
-app.get("/users", async (req, res) => {
-  try {
-    // pool.query() returns a promise that resolves to a result object
-    const result = await pool.query(`SELECT * FROM users`);
-    // Rows are in the result.rows property
-    res.json(result.rows); 
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Route: Get 1 user by email
-app.get("/user/:email", async (req, res) => {
-  const email = req.params.email;
-
-  try {
-    // 1. Use '$1' for the first parameter
-    // 2. Pass the parameters in the second argument array
-    const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
-    
-    const user = result.rows[0]; // PostgreSQL returns an array of rows
-
-    if (!user) {
-      return res.json({}); // Return empty object if not found
-    }
-
-    res.json(user);
-
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
