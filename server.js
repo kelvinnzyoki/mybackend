@@ -29,6 +29,14 @@ const pool = new Pool({
 
 pool.on("connect", () => {
   console.log("✅ PostgreSQL connected");
+
+  pool.on("error", (err) => {
+  console.error("❌ PostgreSQL error:", err);
+  process.exit(1);
+});
+
+module.exports = pool;
+  
 });
 
 /* -------------------- MIDDLEWARE -------------------- */
