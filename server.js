@@ -17,9 +17,10 @@ const corsOptions = {
 /* -------------------- DATABASE POOL -------------------- */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production"
-    ? { rejectUnauthorized: false }
-    : false,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
 });
 
 pool.on("connect", () => {
@@ -131,6 +132,6 @@ app.post("/record", async (req, res) => {
 });
 
 /* -------------------- START SERVER -------------------- */
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
