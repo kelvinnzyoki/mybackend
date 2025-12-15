@@ -2,15 +2,14 @@
 const PORT = process.env.PORT || 5432;
 const express = require("express");
 const app = express();
-const cors = require('cors');
 const helmet = require("helmet");
 // Configuration to allow requests from your specific domain
+const cors = require('cors')
 const corsOptions = {
   origin: 'https://kelvinnzyoki.github.io', 
   optionsSuccessStatus: 200 // For legacy browser support
 }
 
-app.use(cors());
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -93,6 +92,7 @@ app.post("/record", (req, res) => {
     message: "Points recorded successfully",
     data: { dataToRecord }
   });
+});
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
