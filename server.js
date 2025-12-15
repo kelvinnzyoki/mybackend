@@ -14,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT;
 
 const corsOptions = {
-  origin: "https://kelvinnzyoki.github.io",
+  origin: "https://kelvinnzyoki.github.io/TAM/",
   optionsSuccessStatus: 200,
 };
 
