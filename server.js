@@ -46,6 +46,17 @@ app.post("/signup", (req, res) => {
   res.json({ message: "Signup successful", user: { username, email } });
 });
 
+// Route: Get all users
+app.get("/users", async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM users`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching users:", err); // Better logging
+    res.status(500).json({ error: "Internal Server Error" }); // More generic error for frontend
+  }
+});
+
 
 // -------------------------------------
 // LOGIN ENDPOINT
