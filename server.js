@@ -2,7 +2,7 @@ console.log("🚀 Server file loaded"); /* For debugging */
 
 
 
-require("dotenv").config();
+require("--omit=dev").config();
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
