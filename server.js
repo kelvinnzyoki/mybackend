@@ -4,11 +4,11 @@ const express = require("express");
 const app = express();
 const helmet = require("helmet");
 // Configuration to allow requests from your specific domain
-const cors = require('cors')
+const cors = require('cors');
 const corsOptions = {
   origin: 'https://kelvinnzyoki.github.io', 
   optionsSuccessStatus: 200 // For legacy browser support
-}
+};
 
 app.use(cors(corsOptions));
 app.use(express.json());
