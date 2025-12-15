@@ -9,6 +9,18 @@ const corsOptions = {
   origin: 'https://kelvinnzyoki.github.io', 
   optionsSuccessStatus: 200 // For legacy browser support
 };
+import pkg from "pg";
+const { Pool } = pkg;
+
+// Railway provides DATABASE_URL automatically
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production"
+    ? { rejectUnauthorized: false }
+    : false,
+});
+//const { Pool } = require('pg');
+//const { pool } = require('./db'); // Import the pg pool
 
 app.use(cors(corsOptions));
 app.use(express.json());
