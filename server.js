@@ -7,7 +7,7 @@ const { Pool } = require("pg");
 const app = express();
 
 /* -------------------- CONFIG -------------------- */
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 const corsOptions = {
   origin: "https://kelvinnzyoki.github.io",
