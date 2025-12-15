@@ -1,3 +1,7 @@
+console.log("🚀 Server file loaded"); /* For debugging */
+
+
+
 require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
