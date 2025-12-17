@@ -72,7 +72,7 @@ app.get("/", (req, res) => {
 });
 
 /* ---------- SIGNUP ---------- */
-app.post("/submit", async (req, res) => {
+app.post("/signup", async (req, res) => {
   const { username, email, password } = req.body;
 
   if (!username || !email || !password) {
