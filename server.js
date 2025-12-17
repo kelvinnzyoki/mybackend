@@ -35,6 +35,28 @@ pool.on("error", (err) => {
   process.exit(1);
 });
 
+const pool = require("./db");
+
+async function initDb() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log("✅ Database tables created / verified");
+  } catch (err) {
+    console.error("❌ DB init error:", err);
+  }
+}
+
+module.exports = initDb;
+
 module.exports = pool;
 
 /* -------------------- MIDDLEWARE -------------------- */
