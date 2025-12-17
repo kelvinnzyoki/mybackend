@@ -72,37 +72,32 @@ app.get("/", (req, res) => {
 });
 
 /* ---------- SIGNUP ---------- */
-app.post("/signup", async (req, res) => {
-  const { username, email, password } = req.body;
+app.post("/submit", async (req, res) => {
+  // 1. Extraction
+  const { name, email, message } = req.body;
 
-  if (!username || !email || !password) {
-    return res.status(400).json({ message: "All fields required" });
+  // 2. Validation (Basic)
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: "All fields are required." });
   }
 
   try {
-    const exists = await pool.query(
-      "SELECT id FROM users WHERE email = $1",
-      [email]
-    );
+    // 3. Operation: Insert into Database
+    const query = "INSERT INTO submissions (name, email, message) VALUES ($1, $2, $3) RETURNING id";
+    const values = [name, email, message];
+    const result = await pool.query(query, values);
 
-    if (exists.rows.length > 0) {
-      return res.status(400).json({ message: "Email already registered" });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO users (username, email, password)
-       VALUES ($1, $2, $3)
-       RETURNING id, username, email`,
-      [username, email, password]
-    );
-
-    res.status(201).json({
-      message: "Signup successful",
-      user: result.rows[0],
+    // 4. Success Response
+    res.status(201).json({ 
+      success: true, 
+      message: "Data received!",
+      id: result.rows[0].id 
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+
+  } catch (error) {
+    // 5. Error Handling
+    console.error("Database Error:", error);
+    res.status(500).json({ error: "Internal server error. Please try again later." });
   }
 });
 
