@@ -34,8 +34,9 @@ pool.on("error", (err) => {
   console.error("❌ PostgreSQL error:", err);
   process.exit(1);
 });
+module.exports = pool;
 
-const pool = require("./db");
+/*const pool = require("./db");
 
 async function initDb() {
   try {
