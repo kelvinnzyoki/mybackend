@@ -10,21 +10,23 @@ const cors = require("cors");
 
 const app = express();
 
-app.options('*', cors()); // Handle preflight
 
 /* -------------------- CONFIG -------------------- */
-const PORT = process.env.PORT;
 
-const { Pool } = require("pg");
+
+
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://kelvinnzyoki.github.io/TAM/'],
+  origin: ['https://kelvinnzyoki.github.io/TAM/'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.options('*', cors()); // Handle preflight
+
 
 /* -------------------- DATABASE POOL -------------------- */
+const { Pool } = require("pg");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -67,7 +69,7 @@ module.exports = initDb;
 module.exports = pool;
 
 /* -------------------- MIDDLEWARE -------------------- */
-app.use(cors(corsOptions));
+//app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
@@ -176,6 +178,7 @@ app.post("/record", async (req, res) => {
 });
 
 /* -------------------- START SERVER -------------------- */
+const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
