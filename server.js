@@ -72,32 +72,42 @@ app.get("/", (req, res) => {
 });
 
 /* ---------- SIGNUP ---------- */
-app.post("/signup", async (req, res) => {
-  // 1. Extraction
-  const { name, email, message } = req.body;
 
-  // 2. Validation (Basic)
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: "All fields are required." });
+app.post("/signup", async (req, res) => {
+  const { username, email, password, dob } = req.body;
+
+  // Basic validation
+  if (!username || !email || !password || !dob) {
+    return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
-    // 3. Operation: Insert into Database
-    const query = "INSERT INTO submissions (name, email, message) VALUES ($1, $2, $3) RETURNING id";
-    const values = [name, email, message];
+    // WARNING: You're storing plain text passwords — NEVER do this in production!
+    // But for now, assuming you're not hashing yet.
+
+    const query = `
+      INSERT INTO users (username, email, password, dob)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, username, email
+    `;
+    const values = [username, email, password, dob];
+
     const result = await pool.query(query, values);
 
-    // 4. Success Response
-    res.status(201).json({ 
-      success: true, 
-      message: "Data received!",
-      id: result.rows[0].id 
+    res.status(201).json({
+      success: true,
+      message: "Account created successfully!",
+      user: result.rows[0]
     });
 
   } catch (error) {
-    // 5. Error Handling
-    console.error("Database Error:", error);
-    res.status(500).json({ error: "Internal server error. Please try again later." });
+    // Handle unique constraint violations (duplicate email/username)
+    if (error.code === '23505') { // PostgreSQL unique violation
+      return res.status(409).json({ message: "Username or email already exists" });
+    }
+
+    console.error("Signup DB Error:", error);
+    res.status(500).json({ message: "Server error during signup" });
   }
 });
 
