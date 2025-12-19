@@ -15,10 +15,13 @@ const app = express();
 const PORT = process.env.PORT;
 
 const { Pool } = require("pg");
-const corsOptions = {
-  origin: "https://kelvinnzyoki.github.io/TAM/",
-  optionsSuccessStatus: 200,
-};
+
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://your-frontend-domain.com'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 /* -------------------- DATABASE POOL -------------------- */
 const pool = new Pool({
