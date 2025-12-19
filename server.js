@@ -6,6 +6,7 @@ require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
+const bcrypt = require('bcrypt');
 
 
 const app = express();
@@ -74,15 +75,14 @@ app.get("/", (req, res) => {
 
 /* ---------- SIGNUP ---------- */
 
-const bcrypt = require('bcrypt');
-  app.post("/signup", async (req, res) => {
+app.post("/signup", async (req, res) => {
   const { username, email, password, dob } = req.body;
 
   // Basic validation
   if (!username || !email || !password || !dob) {
     return res.status(400).json({ message: "All fields are required" });
   }
-
+  
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     // WARNING: You're storing plain text passwords — NEVER do this in production!
