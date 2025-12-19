@@ -6,13 +6,14 @@ require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
-const { Pool } = require("pg");
+
 
 const app = express();
 
 /* -------------------- CONFIG -------------------- */
 const PORT = process.env.PORT;
 
+const { Pool } = require("pg");
 const corsOptions = {
   origin: "https://kelvinnzyoki.github.io/TAM/",
   optionsSuccessStatus: 200,
@@ -73,7 +74,8 @@ app.get("/", (req, res) => {
 
 /* ---------- SIGNUP ---------- */
 
-app.post("/signup", async (req, res) => {
+const bcrypt = require('bcrypt');
+  app.post("/signup", async (req, res) => {
   const { username, email, password, dob } = req.body;
 
   // Basic validation
@@ -91,7 +93,7 @@ app.post("/signup", async (req, res) => {
       VALUES ($1, $2, $3, $4)
       RETURNING id, username, email
     `;
-    const values = [username, email, password, dob];
+    const values = [username, email, hashedPassword, dob];
 
     const result = await pool.query(query, values);
 
