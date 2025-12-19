@@ -87,7 +87,6 @@ app.post("/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     // WARNING: You're storing plain text passwords — NEVER do this in production!
     // But for now, assuming you're not hashing yet.
-
     const query = `
       INSERT INTO users (username, email, password, dob)
       VALUES ($1, $2, $3, $4)
