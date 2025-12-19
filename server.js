@@ -6,7 +6,7 @@ require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
-const bcrypt = require('bcrypt');
+//const bcrypt = require('bcrypt');
 
 
 const app = express();
@@ -84,7 +84,7 @@ app.post("/signup", async (req, res) => {
   }
   
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    //const hashedPassword = await bcrypt.hash(password, 10);
     // WARNING: You're storing plain text passwords — NEVER do this in production!
     // But for now, assuming you're not hashing yet.
     const query = `
@@ -92,7 +92,7 @@ app.post("/signup", async (req, res) => {
       VALUES ($1, $2, $3, $4)
       RETURNING id, username, email
     `;
-    const values = [username, email, hashedPassword, dob];
+    const values = [username, email, password, dob];
 
     const result = await pool.query(query, values);
 
