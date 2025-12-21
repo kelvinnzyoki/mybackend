@@ -115,7 +115,7 @@ app.get("/users", async (req, res) => {
 
 
 // dataToRecord endpoint
-app.post('/api/record', async (req, res) => {
+app.post('/record', async (req, res) => {
     try {
         const { email, date, score } = req.body;
         
