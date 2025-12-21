@@ -113,54 +113,49 @@ app.get("/users", async (req, res) => {
   }
 });
 
-// POST endpoint to record score
-app.post('/api/record', (req, res) => {
+
+// dataToRecord endpoint
+app.post('/api/record', async (req, res) => {
     try {
         const { username, date, score } = req.body;
         
-        // Validation
         if (!username || !date || score === undefined) {
             return res.status(400).json({ 
                 success: false,
-                error: 'Missing required fields: username, date, or score' 
+                error: 'Missing required fields' 
             });
         }
 
-        // Validate score range
         if (![5, 90].includes(score)) {
             return res.status(400).json({ 
                 success: false,
-                error: 'Invalid score. Must be 5 or 90' 
+                error: 'Invalid score' 
             });
         }
 
-        // Create record
-        const record = {
-            id: Date.now(), // Simple ID generation
-            username,
-            date,
-            score,
-            createdAt: new Date().toISOString()
-        };
+        // Insert into PostgreSQL
+        const result = await pool.query(
+            'INSERT INTO Records (username, date, score) VALUES ($1, $2, $3) RETURNING *',
+            [username, date, score]
+        );
 
-        // Save to database (here using in-memory array)
-        records.push(record);
-
-        // Send success response
         res.status(201).json({
             success: true,
             message: 'Score recorded successfully',
-            data: record
+            data: result.rows[0]
         });
 
     } catch (error) {
-        console.error('Error recording score:', error);
+        console.error('Error:', error);
         res.status(500).json({ 
             success: false,
             error: 'Internal server error' 
         });
     }
 });
+
+
+
 
 /* 4. SERVER START */
 const PORT = process.env.PORT || 3000;
