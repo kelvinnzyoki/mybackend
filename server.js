@@ -126,7 +126,7 @@ app.post('/record', async (req, res) => {
             });
         }
 
-        if (![5, 90].includes(score)) {
+        if (![5, 90].includes(data-score)) {
             return res.status(400).json({ 
                 success: false,
                 error: 'Invalid score' 
