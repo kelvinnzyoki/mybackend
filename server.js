@@ -126,7 +126,7 @@ app.post('/record', async (req, res) => {
             });
         }
 
-        if (![5, 90].includes(data-score)) {
+        if (![5, 90].includes(score)) {
             return res.status(400).json({ 
                 success: false,
                 error: 'Invalid score' 
@@ -136,7 +136,7 @@ app.post('/record', async (req, res) => {
         // Insert into PostgreSQL
         const result = await pool.query(
             'INSERT INTO Records (email, date, score) VALUES ($1, $2, $3) RETURNING *',
-            [email, new Date().toISOString(), currentScore]
+            [email, new Date().toISOString(), score]
         );
 
         res.status(201).json({
