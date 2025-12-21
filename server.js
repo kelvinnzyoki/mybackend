@@ -117,9 +117,9 @@ app.get("/users", async (req, res) => {
 // dataToRecord endpoint
 app.post('/api/record', async (req, res) => {
     try {
-        const { username, date, score } = req.body;
+        const { email, date, score } = req.body;
         
-        if (!username || !date || score === undefined) {
+        if (!email || !date || score === undefined) {
             return res.status(400).json({ 
                 success: false,
                 error: 'Missing required fields' 
@@ -135,8 +135,8 @@ app.post('/api/record', async (req, res) => {
 
         // Insert into PostgreSQL
         const result = await pool.query(
-            'INSERT INTO Records (username, date, score) VALUES ($1, $2, $3) RETURNING *',
-            [username, date, score]
+            'INSERT INTO Records (email, date, score) VALUES ($1, $2, $3) RETURNING *',
+            [email, date, score]
         );
 
         res.status(201).json({
