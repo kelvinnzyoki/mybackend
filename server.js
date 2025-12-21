@@ -134,9 +134,9 @@ app.post('/record', async (req, res) => {
         }
 
         // Insert into PostgreSQL
-        const result = await pool.query(
-            'INSERT INTO Records (email, date, score) VALUES ($1, $2, $3) RETURNING *',
-            [email, new Date().toISOString(), score]
+    const result = await pool.query(
+            'INSERT INTO records (email, date, score) VALUES ($1, $2, $3) RETURNING *',
+            [email, date, score]
         );
 
         res.status(201).json({
