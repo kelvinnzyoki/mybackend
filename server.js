@@ -96,6 +96,10 @@ app.post("/login", async (req, res) => {
       success: true,
       message: "Login successful",
       user: { username: user.username, email: user.email }
+
+      if (response.ok && data.success) {
+    // Save the email the user just logged in with
+    localStorage.setItem("sessionEmail", email);
     });
   } catch (err) {
     console.error("Login Error:", err);
