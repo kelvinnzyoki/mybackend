@@ -403,34 +403,13 @@ app.get('/total-score', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-Permanent Fix: Change the Table Columns
-While the code above works, it is better to fix the tables so they are "correct" for the future. You can run these commands in your Railway PostgreSQL console to convert the columns to integers permanently:
 
-SQL
+const result = await pool.query(query, [userEmail]);
 
-ALTER TABLE pushups ALTER COLUMN score TYPE INTEGER USING score::integer;
-ALTER TABLE situps ALTER COLUMN score TYPE INTEGER USING score::integer;
-ALTER TABLE squats ALTER COLUMN score TYPE INTEGER USING score::integer;
-ALTER TABLE steps ALTER COLUMN score TYPE INTEGER USING score::integer;
-ALTER TABLE addictions ALTER COLUMN score TYPE INTEGER USING score::integer;
-Why this happened
-When you originally created your tables or inserted data, the system inferred that "score" was a string of text. This is common when:
+// Handle the case where the user has no records yet
+const grandTotal = result.rows[0].total || 0;
 
-The CREATE TABLE command used VARCHAR or TEXT for the score.
-
-The data was inserted as strings (e.g., '50') and the table was created automatically by a tool.
-
-Troubleshooting the "Invisible" logs
-Now that you have the error message from the logs, we know the request is hitting the server. The reason you might have thought it was "invisible" is that the server was crashing internally (500 error) before it could finish the log cycle.
-
-Would you like me to show you how to add a "Leaderboard" page that shows the top 10 users across all these tables?
-
-        const result = await pool.query(query, [userEmail]);
-        
-        // Handle the case where the user has no records yet
-        const grandTotal = result.rows[0].total || 0;
-
-        res.json({
+res.json({
             success: true,
             total_score: parseInt(grandTotal)
         });
