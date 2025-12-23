@@ -155,7 +155,7 @@ app.post('/record', async (req, res) => {
 
 
 // POST endpoint to record push-ups data
-app.post('pushup', async (req, res) => {
+app.post('/pushup', async (req, res) => {
     try {
         const { email, date, score } = req.body;
 
