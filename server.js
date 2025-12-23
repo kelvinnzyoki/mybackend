@@ -132,7 +132,7 @@ app.post('/record', async (req, res) => {
 
         // Insert into PostgreSQL
         const result = await pool.query(
-            'INSERT INTO addiction (email, date, score) VALUES ($1, $2, $3) RETURNING *',
+            'INSERT INTO "Addictions" (email, date, score) VALUES ($1, $2, $3) RETURNING *',
             [email, date, score]
         );
 
