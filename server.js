@@ -392,7 +392,7 @@ app.get('/total-score/:email', async (req, res) => {
                 UNION ALL
                 (SELECT DISTINCT ON (email) score FROM steps WHERE email = $1 ORDER BY email, date DESC)
                 UNION ALL
-                (SELECT DISTINCT ON (email) score FROM addictions WHERE email = $1 ORDER BY email, date DESC)
+                (SELECT DISTINCT ON (email) score FROM "Addictions" WHERE email = $1 ORDER BY email, date DESC)
             ) AS user_latest;
         `;
 
