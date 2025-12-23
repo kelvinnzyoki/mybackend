@@ -376,7 +376,7 @@ app.post('/steps', async (req, res) => {
 
 
 //User Total Score endpoint 
-app.get('/api/total-score/:email', async (req, res) => {
+app.get('/total-score/:email', async (req, res) => {
     const userEmail = req.params.email;
 
     try {
