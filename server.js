@@ -207,6 +207,175 @@ app.post('/pushup', async (req, res) => {
     }
 });
 
+
+
+
+// POST endpoint to record sit-ups data
+app.post('/situps', async (req, res) => {
+    try {
+        const { email, date, score } = req.body;
+
+        // 1. Basic Validation
+        if (!email || score === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing email or score data." 
+            });
+        }
+
+        // 2. Validate that the score is one of your allowed values (20, 50, or 70)
+        const allowedScores = [20, 50, 70];
+        if (!allowedScores.includes(Number(score))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid score value received." 
+            });
+        }
+
+        // 3. Database Insertion
+        // Note: entry_date defaults to NOW() if date is not provided
+        const query = `
+            INSERT INTO situps (email, date, score) 
+            VALUES ($1, $2, $3) 
+            RETURNING *;
+        `;
+        const values = [
+            email,
+            date || new Date(),
+            score
+        ];
+
+        const result = await pool.query(query, values);
+
+        // 4. Success Response
+        res.status(201).json({
+            success: true,
+            message: "Daily sit-ups saved successfully!",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Database Error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Internal server error. Could not save record." 
+        });
+    }
+});
+
+
+
+// POST endpoint to record Squats data
+app.post('/squats', async (req, res) => {
+    try {
+        const { email, date, score } = req.body;
+
+        // 1. Basic Validation
+        if (!email || score === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing email or score data." 
+            });
+        }
+
+        // 2. Validate that the score is one of your allowed values (20, 50, or 70)
+        const allowedScores = [20, 50, 70];
+        if (!allowedScores.includes(Number(score))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid score value received." 
+            });
+        }
+
+        // 3. Database Insertion
+        // Note: entry_date defaults to NOW() if date is not provided
+        const query = `
+            INSERT INTO squats (email, date, score) 
+            VALUES ($1, $2, $3) 
+            RETURNING *;
+        `;
+        const values = [
+            email,
+            date || new Date(),
+            score
+        ];
+
+        const result = await pool.query(query, values);
+
+        // 4. Success Response
+        res.status(201).json({
+            success: true,
+            message: "Daily Squats saved successfully!",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Database Error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Internal server error. Could not save record." 
+        });
+    }
+});
+
+
+
+
+        // POST endpoint to record Steps data
+app.post('/steps', async (req, res) => {
+    try {
+        const { email, date, score } = req.body;
+
+        // 1. Basic Validation
+        if (!email || score === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing email or score data." 
+            });
+        }
+
+        // 2. Validate that the score is one of your allowed values (20, 50, or 70)
+        const allowedScores = [20, 50, 70];
+        if (!allowedScores.includes(Number(score))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid score value received." 
+            });
+        }
+
+        // 3. Database Insertion
+        // Note: entry_date defaults to NOW() if date is not provided
+        const query = `
+            INSERT INTO steps (email, date, score) 
+            VALUES ($1, $2, $3) 
+            RETURNING *;
+        `;
+        const values = [
+            email,
+            date || new Date(),
+            score
+        ];
+
+        const result = await pool.query(query, values);
+
+        // 4. Success Response
+        res.status(201).json({
+            success: true,
+            message: "Daily Steps saved successfully!",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Database Error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Internal server error. Could not save record." 
+        });
+    }
+});
+    
+
+
 /* 4. SERVER START */
 const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
