@@ -396,35 +396,17 @@ app.get('/total-score', async (req, res) => {
         `;
 
         const result = await pool.query(query, [userEmail]);
-        res.json({ success: true, total_score: parseInt(result.rows[0].total || 0) });
+        const total = result.rows[0].total || 0;
+
+        res.json({ success: true, total_score: parseInt(total) });
 
     } catch (error) {
-        console.error("Aggregation Error Details:", error.message);
-        res.status(500).json({ success: false, error: error.message });
+        console.error("Aggregation Error:", error);
+        res.status(500).json({ success: false, message: "Database error" });
     }
 });
 
-const result = await pool.query(query, [userEmail]);
-
-// Handle the case where the user has no records yet
-const grandTotal = result.rows[0].total || 0;
-
-res.json({
-            success: true,
-            total_score: parseInt(grandTotal)
-        });
-
-    } catch (error) {
-        // This log is crucial for debugging on Railway
-        console.error("Aggregation Error Details:", error.message);
-        res.status(500).json({ 
-            success: false, 
-            message: "Database error", 
-            error: error.message 
-        });
-    }
-});
-    
+        
 
 
 /* 4. SERVER START */
