@@ -380,32 +380,40 @@ app.get('/api/total-score/:email', async (req, res) => {
     const userEmail = req.params.email;
 
     try {
+        // We wrap each SELECT in parentheses to ensure DISTINCT ON works per table
         const query = `
             SELECT SUM(score) as total 
             FROM (
-                SELECT DISTINCT ON (email) score FROM pushups WHERE email = $1 ORDER BY email, entry_date DESC
+                (SELECT DISTINCT ON (email) score FROM pushups WHERE email = $1 ORDER BY email, entry_date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) score FROM situps WHERE email = $1 ORDER BY email, entry_date DESC
+                (SELECT DISTINCT ON (email) score FROM situps WHERE email = $1 ORDER BY email, entry_date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) score FROM squats WHERE email = $1 ORDER BY email, entry_date DESC
+                (SELECT DISTINCT ON (email) score FROM squats WHERE email = $1 ORDER BY email, entry_date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) score FROM steps WHERE email = $1 ORDER BY email, entry_date DESC
+                (SELECT DISTINCT ON (email) score FROM steps WHERE email = $1 ORDER BY email, entry_date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) score FROM "Addictions" WHERE email = $1 ORDER BY email, entry_date DESC
+                (SELECT DISTINCT ON (email) score FROM addictions WHERE email = $1 ORDER BY email, entry_date DESC)
             ) AS user_latest;
         `;
 
         const result = await pool.query(query, [userEmail]);
         
+        // Handle the case where the user has no records yet
+        const grandTotal = result.rows[0].total || 0;
+
         res.json({
             success: true,
-            email: userEmail,
-            total_score: result.rows[0].total || 0
+            total_score: parseInt(grandTotal)
         });
 
     } catch (error) {
-        console.error("Aggregation Error:", error);
-        res.status(500).json({ success: false, message: "Error calculating total score" });
+        // This log is crucial for debugging on Railway
+        console.error("Aggregation Error Details:", error.message);
+        res.status(500).json({ 
+            success: false, 
+            message: "Database error", 
+            error: error.message 
+        });
     }
 });
     
