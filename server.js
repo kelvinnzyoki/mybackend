@@ -373,6 +373,41 @@ app.post('/steps', async (req, res) => {
         });
     }
 });
+
+
+//User Total Score endpoint 
+app.get('/api/total-score/:email', async (req, res) => {
+    const userEmail = req.params.email;
+
+    try {
+        const query = `
+            SELECT SUM(score) as total 
+            FROM (
+                SELECT DISTINCT ON (email) score FROM pushups WHERE email = $1 ORDER BY email, entry_date DESC
+                UNION ALL
+                SELECT DISTINCT ON (email) score FROM situps WHERE email = $1 ORDER BY email, entry_date DESC
+                UNION ALL
+                SELECT DISTINCT ON (email) score FROM squats WHERE email = $1 ORDER BY email, entry_date DESC
+                UNION ALL
+                SELECT DISTINCT ON (email) score FROM steps WHERE email = $1 ORDER BY email, entry_date DESC
+                UNION ALL
+                SELECT DISTINCT ON (email) score FROM "Addictions" WHERE email = $1 ORDER BY email, entry_date DESC
+            ) AS user_latest;
+        `;
+
+        const result = await pool.query(query, [userEmail]);
+        
+        res.json({
+            success: true,
+            email: userEmail,
+            total_score: result.rows[0].total || 0
+        });
+
+    } catch (error) {
+        console.error("Aggregation Error:", error);
+        res.status(500).json({ success: false, message: "Error calculating total score" });
+    }
+});
     
 
 
