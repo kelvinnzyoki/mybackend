@@ -384,15 +384,15 @@ app.get('/total-score/:email', async (req, res) => {
         const query = `
             SELECT SUM(score) as total 
             FROM (
-                (SELECT DISTINCT ON (email) score FROM pushups WHERE email = $1 ORDER BY email, entry_date DESC)
+                (SELECT DISTINCT ON (email) score FROM pushups WHERE email = $1 ORDER BY email, date DESC)
                 UNION ALL
-                (SELECT DISTINCT ON (email) score FROM situps WHERE email = $1 ORDER BY email, entry_date DESC)
+                (SELECT DISTINCT ON (email) score FROM situps WHERE email = $1 ORDER BY email, date DESC)
                 UNION ALL
-                (SELECT DISTINCT ON (email) score FROM squats WHERE email = $1 ORDER BY email, entry_date DESC)
+                (SELECT DISTINCT ON (email) score FROM squats WHERE email = $1 ORDER BY email, date DESC)
                 UNION ALL
-                (SELECT DISTINCT ON (email) score FROM steps WHERE email = $1 ORDER BY email, entry_date DESC)
+                (SELECT DISTINCT ON (email) score FROM steps WHERE email = $1 ORDER BY email, date DESC)
                 UNION ALL
-                (SELECT DISTINCT ON (email) score FROM addictions WHERE email = $1 ORDER BY email, entry_date DESC)
+                (SELECT DISTINCT ON (email) score FROM addictions WHERE email = $1 ORDER BY email, date DESC)
             ) AS user_latest;
         `;
 
