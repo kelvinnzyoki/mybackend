@@ -123,7 +123,7 @@ app.post('/record', async (req, res) => {
             });
         }
 
-        if (![5, 50].includes(score)) {
+        if (![0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40].includes(score)) {
             return res.status(400).json({
                 success: false,
                 error: 'Invalid score'
@@ -168,7 +168,7 @@ app.post('/pushup', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [20, 50, 70];
+        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
         if (!allowedScores.includes(Number(score))) {
             return res.status(400).json({ 
                 success: false, 
@@ -224,7 +224,7 @@ app.post('/situps', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [20, 50, 70];
+        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
         if (!allowedScores.includes(Number(score))) {
             return res.status(400).json({ 
                 success: false, 
@@ -279,7 +279,7 @@ app.post('/squats', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [20, 50, 70];
+        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
         if (!allowedScores.includes(Number(score))) {
             return res.status(400).json({ 
                 success: false, 
@@ -335,7 +335,7 @@ app.post('/steps', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [20, 50, 70];
+        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
         if (!allowedScores.includes(Number(score))) {
             return res.status(400).json({ 
                 success: false, 
