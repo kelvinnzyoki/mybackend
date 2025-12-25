@@ -112,6 +112,9 @@ app.get("/users", async (req, res) => {
 });
 
 // dataToRecord endpoint
+function isValidScore(value) {
+    return Number.isInteger(value) && value >= 0 && value <= 20000;
+};
 app.post('/record', async (req, res) => {
     try {
         const { email, date, score } = req.body;
@@ -123,12 +126,10 @@ app.post('/record', async (req, res) => {
             });
         }
 
-        function isValidScore(value) {
-    return Number.isInteger(value) && value >= 0 && value <= 20000;
-        }
-        const score = Number(req.body.score);
         
-        if (!isValidScore(score)) {
+        const currentScore = Number(req.body.score);
+        
+        if (!isValidScore(currentScore)) {
     return res.status(400).json({ error: "Invalid score value" });
 }
 
@@ -171,12 +172,10 @@ app.post('/pushup', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        function isValidScore(value) {
-    return Number.isInteger(value) && value >= 0 && value <= 20000;
-        }
-        const score = Number(req.body.score);
         
-        if (!isValidScore(score)) {
+        const currentScore = Number(req.body.score);
+        
+        if (!isValidScore(currentScore)) {
     return res.status(400).json({ error: "Invalid score value" });
 }
 
@@ -228,12 +227,10 @@ app.post('/situps', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        function isValidScore(value) {
-    return Number.isInteger(value) && value >= 0 && value <= 20000;
-        }
-        const score = Number(req.body.score);
         
-        if (!isValidScore(score)) {
+        const currentScore = Number(req.body.score);
+        
+        if (!isValidScore(currentScore)) {
     return res.status(400).json({ error: "Invalid score value" });
 }
 
@@ -285,12 +282,10 @@ app.post('/squats', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        function isValidScore(value) {
-    return Number.isInteger(value) && value >= 0 && value <= 20000;
-        }
-        const score = Number(req.body.score);
         
-        if (!isValidScore(score)) {
+        const currentScore = Number(req.body.score);
+        
+        if (!isValidScore(currentScore)) {
     return res.status(400).json({ error: "Invalid score value" });
 }
 
@@ -343,12 +338,10 @@ app.post('/steps', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        function isValidScore(value) {
-    return Number.isInteger(value) && value >= 0 && value <= 20000;
-        }
-        const score = Number(req.body.score);
         
-        if (!isValidScore(score)) {
+        const currentScore = Number(req.body.score);
+        
+        if (!isValidScore(currentScore)) {
     return res.status(400).json({ error: "Invalid score value" });
 }
 
