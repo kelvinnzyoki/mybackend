@@ -123,12 +123,15 @@ app.post('/record', async (req, res) => {
             });
         }
 
-        if (![0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40].includes(score)) {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid score'
-            });
+        function isValidScore(value) {
+    return Number.isInteger(value) && value >= 0 && value <= 20000;
         }
+        const score = Number(req.body.score);
+        
+        if (!isValidScore(score)) {
+    return res.status(400).json({ error: "Invalid score value" });
+}
+
 
         // Insert into PostgreSQL
         const result = await pool.query(
@@ -168,13 +171,14 @@ app.post('/pushup', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
-        if (!allowedScores.includes(Number(score))) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Invalid score value received." 
-            });
+        function isValidScore(value) {
+    return Number.isInteger(value) && value >= 0 && value <= 20000;
         }
+        const score = Number(req.body.score);
+        
+        if (!isValidScore(score)) {
+    return res.status(400).json({ error: "Invalid score value" });
+}
 
         // 3. Database Insertion
         // Note: entry_date defaults to NOW() if date is not provided
@@ -224,13 +228,15 @@ app.post('/situps', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
-        if (!allowedScores.includes(Number(score))) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Invalid score value received." 
-            });
+        function isValidScore(value) {
+    return Number.isInteger(value) && value >= 0 && value <= 20000;
         }
+        const score = Number(req.body.score);
+        
+        if (!isValidScore(score)) {
+    return res.status(400).json({ error: "Invalid score value" });
+}
+
 
         // 3. Database Insertion
         // Note: entry_date defaults to NOW() if date is not provided
@@ -279,13 +285,15 @@ app.post('/squats', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
-        if (!allowedScores.includes(Number(score))) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Invalid score value received." 
-            });
+        function isValidScore(value) {
+    return Number.isInteger(value) && value >= 0 && value <= 20000;
         }
+        const score = Number(req.body.score);
+        
+        if (!isValidScore(score)) {
+    return res.status(400).json({ error: "Invalid score value" });
+}
+
 
         // 3. Database Insertion
         // Note: entry_date defaults to NOW() if date is not provided
@@ -335,13 +343,15 @@ app.post('/steps', async (req, res) => {
         }
 
         // 2. Validate that the score is one of your allowed values (20, 50, or 70)
-        const allowedScores = [0, 1, 4, 5, 6, 7, 8, 10, 12, 13, 15, 40];
-        if (!allowedScores.includes(Number(score))) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Invalid score value received." 
-            });
+        function isValidScore(value) {
+    return Number.isInteger(value) && value >= 0 && value <= 20000;
         }
+        const score = Number(req.body.score);
+        
+        if (!isValidScore(score)) {
+    return res.status(400).json({ error: "Invalid score value" });
+}
+
 
         // 3. Database Insertion
         // Note: entry_date defaults to NOW() if date is not provided
