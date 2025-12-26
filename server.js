@@ -411,21 +411,22 @@ app.get('/total-score', async (req, res) => {
 
 
 
+
 // Global Leaderboard Endpoint
 app.get('/leaderboard', async (req, res) => {
     try {
         const query = `
             SELECT email, SUM(score_as_int) as total_score
             FROM (
-                SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM pushups ORDER BY email, date DESC
+                (SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM pushups ORDER BY email, date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM situps ORDER BY email, date DESC
+                (SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM situps ORDER BY email, date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM squats ORDER BY email, date DESC
+                (SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM squats ORDER BY email, date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM steps ORDER BY email, date DESC
+                (SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM steps ORDER BY email, date DESC)
                 UNION ALL
-                SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM "Addictions" ORDER BY email, date DESC
+                (SELECT DISTINCT ON (email) email, score::integer as score_as_int FROM "Addictions" ORDER BY email, date DESC)
             ) AS all_latest
             GROUP BY email
             ORDER BY total_score DESC
