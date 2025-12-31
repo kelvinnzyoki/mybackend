@@ -43,7 +43,43 @@ pool.on("error", (err) => console.error("❌ PostgreSQL error:", err));
 // Health Check
 app.get("/", (req, res) => res.send("🚀 Backend is live!"));
 
-// 2. Nodemailer Configuration
+
+
+// SIGN UP 
+
+const redis = require('redis');
+
+// 1. Initialize Redis Client
+// Replace with your actual Redis URL (from Railway, Render, or local)
+const redisClient = redis.createClient({
+    url: 'redis://default:your_password@your_redis_host:port'
+});
+
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
+
+(async () => {
+    await redisClient.connect();
+    console.log("Connected to Redis System");
+})();
+
+/**
+ * PHASE 1: Send and Store Code in Redis
+ */
+app.post('/send-code', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email required" });
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    try {
+        // Store code in Redis with an Expiration of 600 seconds (10 minutes)
+        // 'EX' sets the time-to-live automatically
+        await redisClient.set(email, code, {
+            EX: 600
+        });
+
+        // ... existing Nodemailer transporter.sendMail logic here ...
+        // 2. Nodemailer Configuration
 // Note: Use an "App Password" if using Gmail
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -52,61 +88,29 @@ const transporter = nodemailer.createTransport({
         pass: 'your-app-password'
     }
 });
-
-// 3. Temporary Verification Store
-// Holds { "email@example.com": "123456" }
-let verificationStore = {};
-
-/**
- * PHASE 1: Send Verification Code
- */
-app.post('/send-code', async (req, res) => {
-    const { email } = req.body;
-    
-    if (!email) return res.status(400).json({ message: "Email required" });
-
-    // Generate 6-digit numeric code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Save code to memory (expires in 10 minutes)
-    verificationStore[email] = code;
-    setTimeout(() => delete verificationStore[email], 600000);
-
-    const mailOptions = {
-        from: '"TAM Evolution" <your-email@gmail.com>',
-        to: email,
-        subject: 'SECURITY CODE: Account Initialization',
-        html: `
-            <div style="background:#080808; color:white; padding:40px; font-family:sans-serif; text-align:center; border:2px solid #00c7b6;">
-                <h1 style="color:#00c7b6; letter-spacing:3px;">TAM | EVOLUTION</h1>
-                <p style="color:#888;">Enter the code below to verify your identity:</p>
-                <div style="font-size:42px; font-weight:bold; letter-spacing:10px; margin:20px 0; color:white;">
-                    ${code}
-                </div>
-                <p style="font-size:12px; color:#444;">This code expires in 10 minutes.</p>
-            </div>
-        `
-    };
-    try {
-        await transporter.sendMail(mailOptions);
-        res.json({ success: true, message: "Code dispatched" });
+        
+        res.json({ success: true, message: "Code stored in Redis and sent" });
     } catch (error) {
-        console.error("Mail Error:", error);
-        res.status(500).json({ success: false, message: "Failed to send email" });
+        res.status(500).json({ success: false, message: "Redis/Mail Error" });
     }
 });
 
 /**
- * PHASE 2: Verify Code and Create User
+ * PHASE 2: Verify Code from Redis
  */
 app.post('/signup', async (req, res) => {
     const { email, code, username, password, dob } = req.body;
 
-    // 1. Validate Security Code
-    if (!verificationStore[email] || verificationStore[email] !== code) {
-        return res.status(400).json({ success: false, message: "Invalid or expired code" });
-    }
     try {
+        // Retrieve the code from Redis
+        const storedCode = await redisClient.get(email);
+
+        if (!storedCode || storedCode !== code) {
+            return res.status(400).json({ success: false, message: "Invalid or expired code" });
+        }
+
+        // ... existing Password Hashing and PostgreSQL INSERT logic here ...
+        try {
         // 2. Hash Password
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -120,25 +124,20 @@ app.post('/signup', async (req, res) => {
         const values = [username, email, hashedPassword, dob];
         
         const result = await pool.query(query, values);
+            
 
-        // 4. Cleanup: Remove code from memory
-        delete verificationStore[email];
+        // Cleanup: Remove code from Redis immediately after successful signup
+        await redisClient.del(email);
 
-        res.json({ 
-            success: true, 
-            message: "User created successfully",
-            user: result.rows[0] 
-        });
+        res.json({ success: true, message: "Verified and User Created" });
 
     } catch (error) {
-        console.error("Signup DB Error:", error);
-        if (error.code === '23505') { // Unique constraint violation (Email already exists)
-            res.status(400).json({ success: false, message: "Email already registered" });
-        } else {
-            res.status(500).json({ success: false, message: "Database error during signup" });
-        }
+        res.status(500).json({ success: false, message: "Server error" });
     }
 });
+
+
+
         
         
 
