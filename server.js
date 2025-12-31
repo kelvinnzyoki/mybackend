@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const bcrypt = require("bcryptjs"); // Using bcryptjs for stability
 const { Pool } = require("pg");
+const nodemailer = require('nodemailer');
 
 const app = express();
 
@@ -42,36 +43,107 @@ pool.on("error", (err) => console.error("❌ PostgreSQL error:", err));
 // Health Check
 app.get("/", (req, res) => res.send("🚀 Backend is live!"));
 
-// SIGNUP
-app.post("/signup", async (req, res) => {
-    const { username, email, password, dob } = req.body;
-
-    if (!username || !email || !password || !dob) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
-
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const query = `INSERT INTO users (username, email, password, dob) VALUES ($1, $2, $3, $4) RETURNING id, username, email`; // FIXED: Added backticks
-        const values = [username, email, hashedPassword, dob];
-
-        const result = await pool.query(query, values);
-        res.status(201).json({
-            success: true,
-            message: "Account created successfully!",
-            user: result.rows[0]
-        });
-
-    } catch (error) {
-        if (error.code === '23505') {
-            return res.status(409).json({ message: "Username or email already exists" });
-        }
-        console.error("Signup Error:", error);
-        res.status(500).json({ message: "Server error during signup" });
+// 2. Nodemailer Configuration
+// Note: Use an "App Password" if using Gmail
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'your-email@gmail.com',
+        pass: 'your-app-password'
     }
 });
 
-// LOGIN (With Hash Verification)
+// 3. Temporary Verification Store
+// Holds { "email@example.com": "123456" }
+let verificationStore = {};
+
+/**
+ * PHASE 1: Send Verification Code
+ */
+app.post('/send-code', async (req, res) => {
+    const { email } = req.body;
+    
+    if (!email) return res.status(400).json({ message: "Email required" });
+
+    // Generate 6-digit numeric code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save code to memory (expires in 10 minutes)
+    verificationStore[email] = code;
+    setTimeout(() => delete verificationStore[email], 600000);
+
+    const mailOptions = {
+        from: '"TAM Evolution" <your-email@gmail.com>',
+        to: email,
+        subject: 'SECURITY CODE: Account Initialization',
+        html: `
+            <div style="background:#080808; color:white; padding:40px; font-family:sans-serif; text-align:center; border:2px solid #00c7b6;">
+                <h1 style="color:#00c7b6; letter-spacing:3px;">TAM | EVOLUTION</h1>
+                <p style="color:#888;">Enter the code below to verify your identity:</p>
+                <div style="font-size:42px; font-weight:bold; letter-spacing:10px; margin:20px 0; color:white;">
+                    ${code}
+                </div>
+                <p style="font-size:12px; color:#444;">This code expires in 10 minutes.</p>
+            </div>
+        `
+    };
+    try {
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, message: "Code dispatched" });
+    } catch (error) {
+        console.error("Mail Error:", error);
+        res.status(500).json({ success: false, message: "Failed to send email" });
+    }
+});
+
+/**
+ * PHASE 2: Verify Code and Create User
+ */
+app.post('/signup', async (req, res) => {
+    const { email, code, username, password, dob } = req.body;
+
+    // 1. Validate Security Code
+    if (!verificationStore[email] || verificationStore[email] !== code) {
+        return res.status(400).json({ success: false, message: "Invalid or expired code" });
+    }
+    try {
+        // 2. Hash Password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // 3. Insert into Database
+        const query = `
+            INSERT INTO users (username, email, password, dob, created_at)
+            VALUES ($1, $2, $3, $4, NOW())
+            RETURNING id, username, email;
+        `;
+        const values = [username, email, hashedPassword, dob];
+        
+        const result = await pool.query(query, values);
+
+        // 4. Cleanup: Remove code from memory
+        delete verificationStore[email];
+
+        res.json({ 
+            success: true, 
+            message: "User created successfully",
+            user: result.rows[0] 
+        });
+
+    } catch (error) {
+        console.error("Signup DB Error:", error);
+        if (error.code === '23505') { // Unique constraint violation (Email already exists)
+            res.status(400).json({ success: false, message: "Email already registered" });
+        } else {
+            res.status(500).json({ success: false, message: "Database error during signup" });
+        }
+    }
+});
+        
+        
+
+
+// LOGIN
 app.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
@@ -102,7 +174,7 @@ app.post("/login", async (req, res) => {
 });
 
 // GET ALL USERS (Example)
-app.get("/users", async (req, res) => {
+app.get("/users",) => {
     try {
         const result = await pool.query("SELECT id, username, email FROM users");
         res.json(result.rows);
