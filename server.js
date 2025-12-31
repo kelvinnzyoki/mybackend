@@ -52,7 +52,7 @@ const redis = require('redis');
 // 1. Initialize Redis Client
 // Replace with your actual Redis URL (from Railway, Render, or local)
 const redisClient = redis.createClient({
-    url: 'redis://default:your_password@your_redis_host:port'
+    url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
