@@ -51,16 +51,15 @@ const redis = require('redis');
 
 // 1. Initialize Redis Client
 // Replace with your actual Redis URL (from Railway, Render, or local)
-const redisClient = redis.createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-
-redisClient.on('error', (err) => console.log('Redis Client Error', err));
-
 (async () => {
-    await redisClient.connect();
-    console.log("Connected to Redis System");
+    try {
+        await redisClient.connect();
+        console.log("✅ Redis connected");
+    } catch (err) {
+        console.error("❌ Redis connection failed:", err);
+    }
 })();
+
 
 /**
  * PHASE 1: Send and Store Code in Redis
@@ -81,13 +80,13 @@ app.post('/send-code', async (req, res) => {
         // ... existing Nodemailer transporter.sendMail logic here ...
         // 2. Nodemailer Configuration
 // Note: Use an "App Password" if using Gmail
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'your-email@gmail.com',
-        pass: 'your-app-password'
-    }
+await transporter.sendMail({
+    from: 'process.env.EMAIL_PASS" <process.env.EMAIL_USER>',
+    to: email,
+    subject: "Your Verification Code",
+    text: `Your verification code is: ${code}`
 });
+
         
         res.json({ success: true, message: "Code stored in Redis and sent" });
     } catch (error) {
@@ -173,7 +172,7 @@ app.post("/login", async (req, res) => {
 });
 
 // GET ALL USERS (Example)
-app.get("/users",) => {
+app.get("/users", async (req, res) => {
     try {
         const result = await pool.query("SELECT id, username, email FROM users");
         res.json(result.rows);
