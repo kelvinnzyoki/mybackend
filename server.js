@@ -177,7 +177,7 @@ app.post('/signup', async (req, res) => {
         res.json({ success: true, message: "User Created" });
     } catch (error) {
         console.error("Signup Error:", error);
-        res.status(500).json({ success: false, message: "Database error" });
+        res.status(500).json({ success: false, message: "Database error" }); 
     }
 }); // Fixed missing closing bracket here
 
