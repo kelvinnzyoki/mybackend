@@ -21,7 +21,7 @@ const app = express();
  **********************************/
 app.use(helmet());
 app.use(cors({
-  origin: ["https://kelvinnzyoki.github.io"],
+  origin: ["https://kelvinnzyoki.github.io/TAM/"],
   credentials: true
 }));
 app.use(express.json());
@@ -69,7 +69,7 @@ const transporter = nodemailer.createTransport({
  * HELPERS
  **********************************/
 function isValidScore(value) {
-  return Number.isInteger(value) && value >= 0 && value <= 20000;
+  return Number.isInteger(value) && value >= 0 && value <= 200000;
 }
 
 /**********************************
