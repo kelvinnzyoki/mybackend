@@ -18,7 +18,7 @@ const app = express();
 app.use(helmet());
 app.use(cors({
   // Removed trailing slash and subfolder to ensure GitHub Pages broad compatibility
-  origin: ["https://kelvinnzyoki.github.io"], 
+  origin: ["https://kelvinnzyoki.github.io/TAM/"], 
   credentials: true
 }));
 app.use(express.json());
