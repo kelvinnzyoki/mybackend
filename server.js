@@ -84,7 +84,7 @@ app.get("/", (_, res) => {
  **********************************/
 
 // SEND EMAIL CODE
-app.post("/auth/send-code", async (req, res) => {
+app.post("/send-code", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: "Email required" });
 
@@ -108,7 +108,7 @@ app.post("/auth/send-code", async (req, res) => {
 });
 
 // SIGNUP
-app.post("/auth/signup", async (req, res) => {
+app.post("/signup", async (req, res) => {
   const { email, code, username, password, dob } = req.body;
 
   const storedCode = await redisClient.get(email);
@@ -119,8 +119,8 @@ app.post("/auth/signup", async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await pool.query(
-    `INSERT INTO users (username, email, password, dob, created_at)
-     VALUES ($1, $2, $3, $4, NOW())`,
+    `INSERT INTO users (username, email, password, dob)
+     VALUES ($1, $2, $3, $4)`,
     [username, email, hashedPassword, dob]
   );
 
@@ -129,7 +129,7 @@ app.post("/auth/signup", async (req, res) => {
 });
 
 // LOGIN
-app.post("/auth/login", async (req, res) => {
+app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const result = await pool.query(
@@ -157,7 +157,7 @@ app.post("/auth/login", async (req, res) => {
 /**********************************
  * SCORE ROUTES
  **********************************/
-app.post("/scores/:type", async (req, res) => {
+app.post("/scores", async (req, res) => {
   const { email, score, date } = req.body;
   const { type } = req.params;
 
@@ -166,7 +166,7 @@ app.post("/scores/:type", async (req, res) => {
   }
 
   const query = `
-    INSERT INTO ${type} (email, date, score)
+    INSERT INTO (email, date, score)
     VALUES ($1, $2, $3)
     RETURNING *;
   `;
