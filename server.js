@@ -2,7 +2,6 @@
  * ENV + IMPORTS
  **********************************/
 require("dotenv").config();
-
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -11,9 +10,6 @@ const { Pool } = require("pg");
 const redis = require("redis");
 const nodemailer = require("nodemailer");
 
-/**********************************
- * APP INIT (ONLY ONCE)
- **********************************/
 const app = express();
 
 /**********************************
@@ -21,7 +17,8 @@ const app = express();
  **********************************/
 app.use(helmet());
 app.use(cors({
-  origin: ["https://kelvinnzyoki.github.io/TAM/"],
+  // Removed trailing slash and subfolder to ensure GitHub Pages broad compatibility
+  origin: ["https://kelvinnzyoki.github.io"], 
   credentials: true
 }));
 app.use(express.json());
@@ -34,10 +31,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-pool.on("connect", () => {
-  console.log("✅ PostgreSQL connected");
-});
-
 /**********************************
  * REDIS
  **********************************/
@@ -45,13 +38,15 @@ const redisClient = redis.createClient({
   url: process.env.REDIS_URL
 });
 
-redisClient.on("error", err =>
-  console.error("❌ Redis Error:", err)
-);
+redisClient.on("error", err => console.error("❌ Redis Error:", err));
 
 (async () => {
-  await redisClient.connect();
-  console.log("✅ Redis connected");
+  try {
+    await redisClient.connect();
+    console.log("✅ Redis connected");
+  } catch (err) {
+    console.error("❌ Redis connection failed:", err);
+  }
 })();
 
 /**********************************
@@ -73,17 +68,12 @@ function isValidScore(value) {
 }
 
 /**********************************
- * HEALTH CHECK
- **********************************/
-app.get("/", (_, res) => {
-  res.send("🚀 Backend is live");
-});
-
-/**********************************
- * AUTH ROUTES
+ * ROUTES
  **********************************/
 
-// SEND EMAIL CODE
+app.get("/", (_, res) => res.send("🚀 Backend is live"));
+
+// PHASE 1: SEND EMAIL CODE
 app.post("/send-code", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: "Email required" });
@@ -107,109 +97,91 @@ app.post("/send-code", async (req, res) => {
   }
 });
 
-// SIGNUP
+// PHASE 2: SIGNUP
 app.post("/signup", async (req, res) => {
   const { email, code, username, password, dob } = req.body;
 
-  const storedCode = await redisClient.get(email);
-  if (!storedCode || storedCode !== code) {
-    return res.status(400).json({ message: "Invalid or expired code" });
+  try {
+    const storedCode = await redisClient.get(email);
+    if (!storedCode || storedCode !== code) {
+      return res.status(400).json({ message: "Invalid or expired code" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      `INSERT INTO users (username, email, password, dob) VALUES ($1, $2, $3, $4)`,
+      [username, email, hashedPassword, dob]
+    );
+
+    await redisClient.del(email);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Database error" });
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  await pool.query(
-    `INSERT INTO users (username, email, password, dob)
-     VALUES ($1, $2, $3, $4)`,
-    [username, email, hashedPassword, dob]
-  );
-
-  await redisClient.del(email);
-  res.json({ success: true });
 });
 
 // LOGIN
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    if (!result.rows.length) return res.status(400).json({ message: "Invalid credentials" });
 
-  const result = await pool.query(
-    "SELECT * FROM users WHERE email = $1",
-    [email]
-  );
+    const user = result.rows[0];
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ message: "Invalid credentials" });
 
-  if (!result.rows.length) {
-    return res.status(400).json({ message: "Invalid credentials" });
+    res.json({ success: true, user: { email: user.email, username: user.username } });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
-
-  const user = result.rows[0];
-  const match = await bcrypt.compare(password, user.password);
-
-  if (!match) {
-    return res.status(400).json({ message: "Invalid credentials" });
-  }
-
-  res.json({
-    success: true,
-    user: { email: user.email, username: user.username }
-  });
 });
 
 /**********************************
- * SCORE ROUTES
+ * SCORE & LEADERBOARD
  **********************************/
-app.post("/scores", async (req, res) => {
-  const { email, score, date } = req.body;
-  const { type } = req.params;
+app.post("/record-score", async (req, res) => {
+    const { email, score, date, table } = req.body; // Pass table name from frontend
+    if (!email || !isValidScore(Number(score))) return res.status(400).json({ message: "Invalid input" });
 
-  if (!email || !isValidScore(Number(score))) {
-    return res.status(400).json({ message: "Invalid input" });
-  }
+    // Use a whitelist for table names to prevent SQL injection
+    const allowedTables = ['pushups', 'situps', 'squats', 'steps', '"Addictions"'];
+    if (!allowedTables.includes(table)) return res.status(400).json({ message: "Invalid table" });
 
-  const query = `
-    INSERT INTO (email, date, score)
-    VALUES ($1, $2, $3)
-    RETURNING *;
-  `;
-
-  const result = await pool.query(query, [
-    email,
-    date || new Date(),
-    score
-  ]);
-
-  res.status(201).json(result.rows[0]);
+    try {
+        const query = `INSERT INTO ${table} (email, date, score) VALUES ($1, $2, $3) RETURNING *`;
+        const result = await pool.query(query, [email, date || new Date(), score]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Database error" });
+    }
 });
 
-/**********************************
- * LEADERBOARD
- **********************************/
 app.get("/leaderboard", async (_, res) => {
-  const result = await pool.query(`
-    SELECT email, SUM(score::int) AS total_score
-    FROM (
-      SELECT DISTINCT ON (email, date) email, score FROM pushups
-      UNION ALL
-      SELECT DISTINCT ON (email, date) email, score FROM situps
-      UNION ALL
-      SELECT DISTINCT ON (email, date) email, score FROM squats
-      UNION ALL
-      SELECT DISTINCT ON (email, date) email, score FROM steps
-      UNION ALL
-      SELECT DISTINCT ON (email, date) email, score FROM "Addictions"
-    ) s
-    GROUP BY email
-    ORDER BY total_score DESC
-    LIMIT 10;
-  `);
-
-  res.json(result.rows);
+  try {
+    const result = await pool.query(`
+        SELECT email, SUM(score::int) AS total_score
+        FROM (
+          SELECT DISTINCT ON (email, date) email, score FROM pushups
+          UNION ALL
+          SELECT DISTINCT ON (email, date) email, score FROM situps
+          UNION ALL
+          SELECT DISTINCT ON (email, date) email, score FROM squats
+          UNION ALL
+          SELECT DISTINCT ON (email, date) email, score FROM steps
+          UNION ALL
+          SELECT DISTINCT ON (email, date) email, score FROM "Addictions"
+        ) s
+        GROUP BY email ORDER BY total_score DESC LIMIT 10;
+      `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: "Leaderboard error" });
+  }
 });
 
-/**********************************
- * SERVER START (ONCE)
- **********************************/
 const PORT = process.env.PORT || 8080;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
