@@ -38,20 +38,27 @@ const pool = new Pool({
 /**********************************
  * REDIS
  **********************************/
+// Replace your current Redis block with this:
 const redisClient = redis.createClient({
-  url: process.env.REDIS_URL
+    url: process.env.REDIS_URL,
+    socket: {
+        connectTimeout: 10000 // Force a failure after 10 seconds instead of hanging
+    }
 });
 
-redisClient.on("error", err => console.error("❌ Redis Error:", err));
+redisClient.on('error', (err) => console.log('❌ Redis Error:', err));
 
-(async () => {
-  try {
-    await redisClient.connect();
-    console.log("✅ Redis connected");
-  } catch (err) {
-    console.error("❌ Redis connection failed:", err);
-  }
-})();
+async function connectRedis() {
+    try {
+        if (!redisClient.isOpen) {
+            await redisClient.connect();
+            console.log("✅ Redis connected successfully");
+        }
+    } catch (err) {
+        console.error("❌ Redis connection failed. Check your REDIS_URL variable.");
+    }
+}
+connectRedis();
 
 /**********************************
  * MAILER
