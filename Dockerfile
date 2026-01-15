@@ -43,4 +43,4 @@ EXPOSE 8080
 USER node
 
 # Start the application
-CMD ["node", "script.js"]
+CMD ["node", "server.js"]
