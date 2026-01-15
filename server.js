@@ -12,6 +12,8 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
+const PORT = process.env.PORT || 8080;
+
 /**********************************
  * MIDDLEWARE
  **********************************/
