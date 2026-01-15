@@ -41,7 +41,7 @@ const pool = new Pool({
  * REDIS
  **********************************/
 // Replace your current Redis block with this:
-/*const redisClient = redis.createClient({
+const redisClient = redis.createClient({
     url: process.env.REDIS_URL,
     socket: {
         connectTimeout: 10000 // Force a failure after 10 seconds instead of hanging
@@ -60,7 +60,7 @@ async function connectRedis() {
         console.error("❌ Redis connection failed. Check your REDIS_URL variable.");
     }
 }
-connectRedis();*/
+connectRedis();
 
 /**********************************
  * MAILER
