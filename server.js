@@ -39,7 +39,7 @@ const pool = new Pool({
  * REDIS
  **********************************/
 // Replace your current Redis block with this:
-const redisClient = redis.createClient({
+/*const redisClient = redis.createClient({
     url: process.env.REDIS_URL,
     socket: {
         connectTimeout: 10000 // Force a failure after 10 seconds instead of hanging
@@ -58,7 +58,7 @@ async function connectRedis() {
         console.error("❌ Redis connection failed. Check your REDIS_URL variable.");
     }
 }
-connectRedis();
+connectRedis();*/
 
 /**********************************
  * MAILER
@@ -194,5 +194,9 @@ app.get("/leaderboard", async (_, res) => {
   }
 });
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+// At the bottom of your file:
+async function startServer() {
+    await connectRedis(); // Wait for Redis
+    app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+}
+startServer(); 
