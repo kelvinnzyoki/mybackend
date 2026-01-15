@@ -23,6 +23,10 @@ COPY . .
 # STAGE 2: Run (The "Production" Image)
 FROM node:20-alpine AS runner
 
+FROM node:20-alpine
+# This removes the "New major version" notice
+RUN npm install -g npm@latest
+
 # Set environment to production
 ENV NODE_ENV=production
 
