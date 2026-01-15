@@ -2,21 +2,23 @@
   "name": "tam",
   "version": "1.0.0",
   "description": "best",
+  "main": "server.js",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
-    "express": "^4.18.2", 
-    "cors": "^2.8.5",      
-    "helmet": "^7.1.0",    
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
     "dotenv": "^16.4.5",
     "bcrypt": "^5.1.1",
     "nodemailer": "^6.9.8",
     "redis": "^4.6.7",
     "bcryptjs": "^2.4.3",
     "pg": "^8.11.3"
-  },
-  "main": "server.js",
-  "scripts": {
-    "prestart": "npm install", 
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
