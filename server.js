@@ -29,7 +29,7 @@ app.use(express.json());
  **********************************/
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Set to true for production if cert trusted
+  ssl: { rejectUnauthorized: true } // Set to true for production if cert trusted
 });
 
 /**********************************
