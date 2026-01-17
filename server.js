@@ -177,7 +177,7 @@ app.post("/record-score", async (req, res) => {
   const { email, score, date, table } = req.body;
   if (!email || !isValidScore(score) || !table) return res.status(400).json({ message: "Invalid input" });
 
-  const allowedTables = ['pushups', 'situps', 'squats', 'steps', '"Addictions"'];
+  const allowedTables = ['pushups', 'situps', 'squats', 'steps', 'addictions'];
   if (!allowedTables.includes(table)) return res.status(400).json({ message: "Invalid table" });
 
   try {
@@ -212,7 +212,7 @@ app.get("/leaderboard", async (_, res) => {
         UNION ALL
         SELECT DISTINCT ON (email, date) email, score FROM steps
         UNION ALL
-        SELECT DISTINCT ON (email, date) email, score FROM "Addictions"
+        SELECT DISTINCT ON (email, date) email, score FROM addictions
       ) s
       GROUP BY email ORDER BY total_score DESC LIMIT 10;
     `);
