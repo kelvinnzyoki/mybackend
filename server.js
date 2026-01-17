@@ -114,18 +114,7 @@ async function connectRedis() {
  * MAILER
  **********************************/
 
-// Install: npm install resend
-
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-// Replace sendMail calls with:
-await resend.emails.send({
-  from: 'Your App <kelvinnzyokimaitha@gmail.com>', // must be verified domain
-  to: email,
-  subject: 'Verification Code',
-  text: `Your code is: ${code}`,
-});
-
 
 
 (async () => {
@@ -175,15 +164,13 @@ app.post("/send-code", async (req, res) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
   try {
-    await redisClient.set(email, code, { EX: 600 });
-
-    await transporter.sendMail({
-      from: `"TAM Evolution" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Verification Code",
-      text: `Your verification code is: ${code}`
-    });
-
+    await resend.emails.send({
+  from: 'TAM <kelvinnzyokimaitha@gmail.com>', // must be verified domain
+  to: email,
+  subject: 'Verification Code',
+  text: `Your code is: ${code}`,
+});
+    
     res.json({ success: true });
   } catch (err) {
     console.error(err);
