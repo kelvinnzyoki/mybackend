@@ -173,11 +173,11 @@ app.post("/login", async (req, res) => {
 /**********************************
  * SCORE & LEADERBOARD
  **********************************/
-app.post("/record-score", async (req, res) => {
+app.post("/addiction", async (req, res) => {
   const { email, score, date, table } = req.body;
   if (!email || !isValidScore(score) || !table) return res.status(400).json({ message: "Invalid input" });
 
-  const allowedTables = ['pushups', 'situps', 'squats', 'steps', 'addictions'];
+  const allowedTables = ['addictions'];
   if (!allowedTables.includes(table)) return res.status(400).json({ message: "Invalid table" });
 
   try {
