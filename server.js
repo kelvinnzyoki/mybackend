@@ -158,7 +158,6 @@ app.get("/", (_, res) => res.send("🚀 Backend is live"));
 
 // PHASE 1: SEND EMAIL CODE
 app.post("/send-code", async (req, res) => {
-  if (!redisClient.isOpen) await redisClient.connect();
   const { email } = req.body;
   if (!email || !isValidEmail(email)) return res.status(400).json({ message: "Valid email required" });
 
@@ -230,11 +229,11 @@ app.post("/login", async (req, res) => {
 /**********************************
  * SCORE & LEADERBOARD
  **********************************/
-app.post("/addiction", async (req, res) => {
+app.post("/record-score", async (req, res) => {
   const { email, score, date, table } = req.body;
   if (!email || !isValidScore(score) || !table) return res.status(400).json({ message: "Invalid input" });
 
-  const allowedTables = ['addictions'];
+  const allowedTables = ['addictions', 'pushups', 'situps', 'squats', 'steps'];
   if (!allowedTables.includes(table)) return res.status(400).json({ message: "Invalid table" });
 
   try {
@@ -249,11 +248,11 @@ app.post("/addiction", async (req, res) => {
 
 
 // Specific endpoints for each category
-app.post("/pushups", (req, res) => recordScore(req, res, 'pushups'));
+/*app.post("/pushups", (req, res) => recordScore(req, res, 'pushups'));
 app.post("/situps", (req, res) => recordScore(req, res, 'situps'));
 app.post("/squats", (req, res) => recordScore(req, res, 'squats'));
 app.post("/steps", (req, res) => recordScore(req, res, 'steps'));
-app.post("/addictions", (req, res) => recordScore(req, res, 'addictions'));
+app.post("/addictions", (req, res) => recordScore(req, res, 'addictions'));*/
 
 
 app.get("/leaderboard", async (_, res) => {
