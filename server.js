@@ -81,17 +81,6 @@ function isValidScore(value) {
 }
 
 
-const tableMap = {
-  pushups: 'pushups',
-  situps: 'situps',
-  squats: 'squats',
-  steps: 'steps',
-  addictions: 'addictions'
-};
-
-const tableName = tableMap[table];
-if (!tableName) return res.status(400).json({ message: "Invalid table" });
-
 /**********************************
  * ROUTES
  **********************************/
@@ -198,7 +187,7 @@ app.get("/leaderboard", async (_, res) => {
           UNION ALL
           SELECT DISTINCT ON (email, date) email, score FROM steps
           UNION ALL
-          SELECT DISTINCT ON (email, date) email, score FROM addictions
+          SELECT DISTINCT ON (email, date) email, score FROM "Addictions"
         ) s
         GROUP BY email ORDER BY total_score DESC LIMIT 10;
       `);
