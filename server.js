@@ -194,9 +194,11 @@ app.get("/leaderboard", async (_, res) => {
   }
 });
 
-// At the bottom of your file:
-async function startServer() {
-    await connectRedis(); // Wait for Redis
-    app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
-}
-startServer(); 
+
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
+
+
+
+
