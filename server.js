@@ -192,11 +192,11 @@ app.post("/record-score", async (req, res) => {
 
 
 // Specific endpoints for each category
-app.post("/record-pushups", (req, res) => recordScore(req, res, 'pushups'));
-app.post("/record-situps", (req, res) => recordScore(req, res, 'situps'));
-app.post("/record-squats", (req, res) => recordScore(req, res, 'squats'));
-app.post("/record-steps", (req, res) => recordScore(req, res, 'steps'));
-app.post("/record-addictions", (req, res) => recordScore(req, res, '"Addictions"'));
+app.post("/pushups", (req, res) => recordScore(req, res, 'pushups'));
+app.post("/situps", (req, res) => recordScore(req, res, 'situps'));
+app.post("/squats", (req, res) => recordScore(req, res, 'squats'));
+app.post("/steps", (req, res) => recordScore(req, res, 'steps'));
+app.post("/addictions", (req, res) => recordScore(req, res, 'addictions'));
 
 
 app.get("/leaderboard", async (_, res) => {
