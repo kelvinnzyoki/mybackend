@@ -229,33 +229,202 @@ app.post("/login", async (req, res) => {
 /**********************************
  * SCORE & LEADERBOARD
  **********************************/
-app.post("/record-score", async (req, res) => {
-  const { email, score, date, table } = req.body;
-  if (!email || !isValidScore(score) || !table) return res.status(400).json({ message: "Invalid input" });
 
-  const allowedTables = ['addictions', 'pushups', 'situps', 'squats', 'steps'];
-  if (!allowedTables.includes(table)) return res.status(400).json({ message: "Invalid table" });
+    /*Addiction*/
+app.post("/addictions", async (req, res) => {
+  const { email, score, date } = req.body;
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ message: "Valid email required" });
+  }
+
+  if (!isValidScore(score)) {
+    return res.status(400).json({ message: "Invalid score" });
+  }
+
+  const recordDate = date ? new Date(date) : new Date();
 
   try {
-    const query = `INSERT INTO ${table} (email, date, score) VALUES ($1, $2, $3) RETURNING *`;
-    const result = await pool.query(query, [email, date || new Date().toISOString(), parseInt(score, 10)]);
-    res.status(201).json(result.rows[0]);
+    const result = await pool.query(
+      `
+      INSERT INTO addictions (email, date, score)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (email, recorded_at)
+      DO UPDATE SET score = EXCLUDED.score
+      RETURNING *
+      `,
+      [email, parseInt(score, 10), recordDate]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("Addiction record error:", err);
     res.status(500).json({ message: "Database error" });
   }
 });
 
 
-// Specific endpoints for each category
-/*app.post("/pushups", (req, res) => recordScore(req, res, 'pushups'));
-app.post("/situps", (req, res) => recordScore(req, res, 'situps'));
-app.post("/squats", (req, res) => recordScore(req, res, 'squats'));
-app.post("/steps", (req, res) => recordScore(req, res, 'steps'));
-app.post("/addictions", (req, res) => recordScore(req, res, 'addictions'));*/
+
 
     
+/*pushups*/
+app.post("/pushups", async (req, res) => {
+  const { email, score, date } = req.body;
 
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ message: "Valid email required" });
+  }
+
+  if (!isValidScore(score)) {
+    return res.status(400).json({ message: "Invalid score" });
+  }
+
+  const recordDate = date ? new Date(date) : new Date();
+
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO pushups (email, date, score)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (email, recorded_at)
+      DO UPDATE SET score = EXCLUDED.score
+      RETURNING *
+      `,
+      [email, parseInt(score, 10), recordDate]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Push-ups record error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
+});
+
+
+/*Situps*/
+app.post("/situps", async (req, res) => {
+  const { email, score, date } = req.body;
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ message: "Valid email required" });
+  }
+
+  if (!isValidScore(score)) {
+    return res.status(400).json({ message: "Invalid score" });
+  }
+
+  const recordDate = date ? new Date(date) : new Date();
+
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO situps (email, date, score)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (email, recorded_at)
+      DO UPDATE SET score = EXCLUDED.score
+      RETURNING *
+      `,
+      [email, parseInt(score, 10), recordDate]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Sit-ups record error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
+});
+    
+
+/*Squats*/
+app.post("/squats", async (req, res) => {
+  const { email, score, date } = req.body;
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ message: "Valid email required" });
+  }
+
+  if (!isValidScore(score)) {
+    return res.status(400).json({ message: "Invalid score" });
+  }
+
+  const recordDate = date ? new Date(date) : new Date();
+
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO squats (email, date, score)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (email, recorded_at)
+      DO UPDATE SET score = EXCLUDED.score
+      RETURNING *
+      `,
+      [email, parseInt(score, 10), recordDate]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Squats record error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
+});
+
+
+    /*Steps*/
+    
+app.post("/steps", async (req, res) => {
+  const { email, score, date } = req.body;
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ message: "Valid email required" });
+  }
+
+  if (!isValidScore(score)) {
+    return res.status(400).json({ message: "Invalid score" });
+  }
+
+  const recordDate = date ? new Date(date) : new Date();
+
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO steps (email, date, score)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (email, recorded_at)
+      DO UPDATE SET score = EXCLUDED.score
+      RETURNING *
+      `,
+      [email, parseInt(score, 10), recordDate]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Steps record error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
+});
+    
+
+  /*Current Total Score*/
 app.get("/total-score", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ message: "Email required" });
