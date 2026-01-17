@@ -254,6 +254,40 @@ app.post("/squats", (req, res) => recordScore(req, res, 'squats'));
 app.post("/steps", (req, res) => recordScore(req, res, 'steps'));
 app.post("/addictions", (req, res) => recordScore(req, res, 'addictions'));*/
 
+    
+
+app.get("/total-score", async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ message: "Email required" });
+
+  try {
+    const query = `
+      SELECT SUM(score::int) AS total_score
+      FROM (
+        SELECT DISTINCT ON (date) score FROM pushups WHERE email = $1
+        UNION ALL
+        SELECT DISTINCT ON (date) score FROM situps WHERE email = $1
+        UNION ALL
+        SELECT DISTINCT ON (date) score FROM squats WHERE email = $1
+        UNION ALL
+        SELECT DISTINCT ON (date) score FROM steps WHERE email = $1
+        UNION ALL
+        SELECT DISTINCT ON (date) score FROM addictions WHERE email = $1
+      ) s;
+    `;
+    const result = await pool.query(query, [email]);
+    
+    // If no scores exist, result.rows[0].total_score will be null. 
+    // We use || 0 to return 0 instead.
+    const total = result.rows[0]?.total_score || 0;
+    
+    res.json({ success: true, total_score: parseInt(total) });
+  } catch (err) {
+    console.error("Total score error:", err);
+    res.status(500).json({ success: false, message: "Error calculating score" });
+  }
+});
+
 
 app.get("/leaderboard", async (_, res) => {
   try {
