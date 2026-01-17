@@ -27,7 +27,6 @@ app.use(express.json());
 /**********************************
  * DATABASE (PostgreSQL) - Neon.tech
  **********************************/
-const { Pool } = require("pg");
 
 let pool;
 
