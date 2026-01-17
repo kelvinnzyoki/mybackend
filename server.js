@@ -12,8 +12,6 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
-const PORT = process.env.PORT || 8080;
-
 /**********************************
  * MIDDLEWARE
  **********************************/
@@ -79,7 +77,6 @@ const transporter = nodemailer.createTransport({
 function isValidScore(value) {
   return Number.isInteger(value) && value >= 0 && value <= 200000;
 }
-
 
 /**********************************
  * ROUTES
