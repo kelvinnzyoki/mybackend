@@ -45,6 +45,16 @@ const pool = new Pool({
  * REDIS
  **********************************/
 // Replace your current Redis block with this:
+
+
+import { createClient } from "redis";
+
+const redis = createClient({
+  url: process.env.REDIS_URL
+});
+
+redis.on("error", err => console.error("Redis Error", err));
+await redis.connect();
 const redisClient = redis.createClient({
     url: process.env.REDIS_URL,
     socket: {
