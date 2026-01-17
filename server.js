@@ -112,22 +112,20 @@ async function connectRedis() {
 /**********************************
  * MAILER
  **********************************/
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+
+// Install: npm install resend
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Replace sendMail calls with:
+await resend.emails.send({
+  from: 'Your App <kelvinnzyokimaitha@gmail.com>', // must be verified domain
+  to: email,
+  subject: 'Verification Code',
+  text: `Your code is: ${code}`,
 });
 
-async function verifyTransporter() {
-  try {
-    await transporter.verify();
-    console.log("✅ Email transporter ready");
-  } catch (err) {
-    console.error("❌ Email setup failed. Check EMAIL_USER/PASS (use App Password for Gmail).", err);
-  }
-}
+
 
 /**********************************
  * HELPERS
