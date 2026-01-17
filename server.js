@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 const { Pool } = require("pg");
 const { createClient } = require("redis");
 const nodemailer = require("nodemailer");
+const { Resend } = require('resend');
 
 const app = express();
 
@@ -114,7 +115,7 @@ async function connectRedis() {
  **********************************/
 
 // Install: npm install resend
-const { Resend } = require('resend');
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Replace sendMail calls with:
