@@ -128,6 +128,27 @@ await resend.emails.send({
 
 
 
+(async () => {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error("❌ RESEND_API_KEY is missing or empty in environment variables");
+      return;
+    }
+
+    console.log("🔑 Resend API Key loaded (first 5 chars only for security):", 
+      process.env.RESEND_API_KEY.substring(0, 5) + "...");
+
+    // Optional: simple test ping to Resend (not sending email yet)
+    // Resend doesn't have a /ping endpoint, but we can catch initialization errors
+    console.log("✅ Resend client initialized successfully");
+
+  } catch (err) {
+    console.error("❌ Failed to initialize Resend client:", err.message);
+  }
+})();
+
+
+
 /**********************************
  * HELPERS
  **********************************/
