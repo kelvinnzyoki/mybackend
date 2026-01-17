@@ -190,6 +190,15 @@ app.post("/record-score", async (req, res) => {
   }
 });
 
+
+// Specific endpoints for each category
+app.post("/record-pushups", (req, res) => recordScore(req, res, 'pushups'));
+app.post("/record-situps", (req, res) => recordScore(req, res, 'situps'));
+app.post("/record-squats", (req, res) => recordScore(req, res, 'squats'));
+app.post("/record-steps", (req, res) => recordScore(req, res, 'steps'));
+app.post("/record-addictions", (req, res) => recordScore(req, res, '"Addictions"'));
+
+
 app.get("/leaderboard", async (_, res) => {
   try {
     const result = await pool.query(`
