@@ -250,7 +250,7 @@ app.post("/addictions", async (req, res) => {
       `
       INSERT INTO addictions (email, date, score)
       VALUES ($1, $2, $3)
-      ON CONFLICT (email, recorded_at)
+      ON CONFLICT (email, date)
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
@@ -291,7 +291,7 @@ app.post("/pushups", async (req, res) => {
       `
       INSERT INTO pushups (email, date, score)
       VALUES ($1, $2, $3)
-      ON CONFLICT (email, recorded_at)
+      ON CONFLICT (email, date)
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
@@ -329,7 +329,7 @@ app.post("/situps", async (req, res) => {
       `
       INSERT INTO situps (email, date, score)
       VALUES ($1, $2, $3)
-      ON CONFLICT (email, recorded_at)
+      ON CONFLICT (email, date)
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
@@ -367,7 +367,7 @@ app.post("/squats", async (req, res) => {
       `
       INSERT INTO squats (email, date, score)
       VALUES ($1, $2, $3)
-      ON CONFLICT (email, recorded_at)
+      ON CONFLICT (email, date)
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
@@ -406,7 +406,7 @@ app.post("/steps", async (req, res) => {
       `
       INSERT INTO steps (email, date, score)
       VALUES ($1, $2, $3)
-      ON CONFLICT (email, recorded_at)
+      ON CONFLICT (email, date)
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
