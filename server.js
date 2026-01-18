@@ -486,7 +486,6 @@ app.get("/leaderboard", async (_, res) => {
 // Startup
 (async () => {
   await connectRedis();
-  await verifyTransporter();
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
 })();
