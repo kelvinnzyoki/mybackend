@@ -170,6 +170,7 @@ app.post("/send-code", async (req, res) => {
   subject: 'Verification Code',
   text: `Your code is: ${code}`,
 });
+  }
     
 
 
@@ -253,7 +254,7 @@ app.post("/addictions", async (req, res) => {
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
-      [email, parseInt(score, 10), recordDate]
+      [email, recordDate, parseInt(score, 10)]
     );
 
     res.status(201).json({
@@ -294,7 +295,7 @@ app.post("/pushups", async (req, res) => {
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
-      [email, parseInt(score, 10), recordDate]
+      [email, recordDate, parseInt(score, 10)]
     );
 
     res.status(201).json({
@@ -332,7 +333,7 @@ app.post("/situps", async (req, res) => {
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
-      [email, parseInt(score, 10), recordDate]
+      [email, recordDate, parseInt(score, 10)]
     );
 
     res.status(201).json({
@@ -370,7 +371,7 @@ app.post("/squats", async (req, res) => {
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
-      [email, parseInt(score, 10), recordDate]
+      [email, recordDate, parseInt(score, 10)]
     );
 
     res.status(201).json({
@@ -409,7 +410,7 @@ app.post("/steps", async (req, res) => {
       DO UPDATE SET score = EXCLUDED.score
       RETURNING *
       `,
-      [email, parseInt(score, 10), recordDate]
+      [email, recordDate, parseInt(score, 10)]
     );
 
     res.status(201).json({
