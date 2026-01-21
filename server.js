@@ -165,7 +165,7 @@ app.post("/send-code", async (req, res) => {
 
   try {
     await resend.emails.send({
-  from: 'TAM <kelvinnzyoki.github.io/TAM>, // must be verified domain
+  from: "TAM <no-reply@kelvinnzyoki.github.io>", // must be verified domain
   to: email,
   subject: 'Verification Code',
   text: `Your code is: ${code}`,
