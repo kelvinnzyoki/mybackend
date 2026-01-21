@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     "https://kelvinnzyoki.github.io",
-    "https://kelvinnzyoki.github.io/TAM",
+    "https://kelvinnzyoki.github.io.TAM",
     "http://localhost:5500",  // For local testing
     "http://127.0.0.1:5500"
   ], 
@@ -166,7 +166,7 @@ app.post("/send-code", async (req, res) => {
   try {
   await resend.emails.send({
     from: "onboarding@resend.dev",
-    to: kelvinnzyokimaitha@gmail.com,
+    to: email,
     subject: "Verification Code",
     text: `Your code is: ${code}`,
   });
