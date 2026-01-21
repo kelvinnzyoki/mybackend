@@ -177,6 +177,11 @@ app.post("/send-code", async (req, res) => {
   console.error("Send code error:", err);
   res.status(500).json({ message: "Failed to send code" });
   }
+
+  if (error) {
+  console.error("Resend Error Code:", error.name);
+  console.error("Resend Error Message:", error.message);
+  }
 });
     
 
