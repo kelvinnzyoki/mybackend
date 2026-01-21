@@ -166,7 +166,7 @@ app.post("/send-code", async (req, res) => {
   try {
   await resend.emails.send({
     from: "onboarding@resend.dev",
-    to: email,
+    to: kelvinnzyokimaitha@gmail.com,
     subject: "Verification Code",
     text: `Your code is: ${code}`,
   });
