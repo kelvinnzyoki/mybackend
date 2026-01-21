@@ -164,13 +164,21 @@ app.post("/send-code", async (req, res) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
   try {
-    await resend.emails.send({
-  from: "TAM <no-reply@kelvinnzyoki.github.io>", // must be verified domain
-  to: email,
-  subject: 'Verification Code',
-  text: `Your code is: ${code}`,
-});
+  await resend.emails.send({
+    from: "TAM <no-reply@yourdomain.com>",
+    to: email,
+    subject: "Verification Code",
+    text: `Your code is: ${code}`,
+  });
+
+  await redisClient.setEx(email, 300, code); // store code for 5 min
+
+  res.json({ success: true });
+} catch (err) {
+  console.error("Send code error:", err);
+  res.status(500).json({ message: "Failed to send code" });
   }
+}
     
 
 
