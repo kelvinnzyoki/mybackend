@@ -165,11 +165,10 @@ app.post("/send-code", async (req, res) => {
   try {
   await resend.emails.send({
     from: "<anything>@wiloifok.resend.app",
-    to: "<anything>@wiloifok.resend.app",
+    to: "kelvinnzyokimaitha@gmail.com",
     subject: "Verification Code",
     html: `<p>Your code is: ${code}</p>`,
   });
-    console.log("RESEND RESULT:", code);
 
   await redisClient.setEx(email, 300, code); // store code for 5 min
 
@@ -179,10 +178,6 @@ app.post("/send-code", async (req, res) => {
   res.status(500).json({ message: "Failed to send code" });
   }
 
-  if (error) {
-  console.error("Resend Error Code:", error.name);
-  console.error("Resend Error Message:", error.message);
-  }
 });
     
 
