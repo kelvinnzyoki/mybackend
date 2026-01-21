@@ -169,6 +169,7 @@ app.post("/send-code", async (req, res) => {
     subject: "Verification Code",
     html: `<p>Your code is: ${code}</p>`,
   });
+    console.log("RESEND RESULT:", code);
 
   await redisClient.setEx(email, 300, code); // store code for 5 min
 
