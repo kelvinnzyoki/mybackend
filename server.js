@@ -162,13 +162,21 @@ app.post("/send-code", async (req, res) => {
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-  try {
+  const { data, error } = await resend.emails.send({
+  from: "onboarding@resend.dev",                  // Official allowed sender
+  to: "youractualsignupemail@gmail.com",          // YOUR real email (the one you registered Resend with)
+  subject: "Verification Code Test",
+  html: `<p>Your code is: <strong>${code}</strong></p>`,
+});
+
+console.log("Resend full response:", { data, error });
+  /*try {
   await resend.emails.send({
     from: "<@wiloifok.resend.app",
     to: "kelvinnzyokimaitha@gmail.com",
     subject: "Verification Code",
     html: `<p>Your code is: ${code}</p>`,
-  });
+  });*/
 
   await redisClient.setEx(email, 300, code); // store code for 5 min
 
