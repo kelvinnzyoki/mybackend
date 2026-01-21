@@ -5,7 +5,6 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const { Pool } = require("pg");
 const { createClient } = require("redis");
-const nodemailer = require("nodemailer");
 const { Resend } = require('resend');
 
 const app = express();
@@ -165,7 +164,7 @@ app.post("/send-code", async (req, res) => {
 
   try {
   await resend.emails.send({
-    from: "onboarding@resend.dev",
+    from: "<anything>@wiloifok.resend.app",
     to: email,
     subject: "Verification Code",
     text: `Your code is: ${code}`,
