@@ -164,7 +164,7 @@ app.post("/send-code", async (req, res) => {
 
   const { data, error } = await resend.emails.send({
   from: "onboarding@resend.dev",                  // Official allowed sender
-  to: "youractualsignupemail@gmail.com",          // YOUR real email (the one you registered Resend with)
+  to: "kelvinnzyokimaitha@gmail.com",          // YOUR real email (the one you registered Resend with)
   subject: "Verification Code Test",
   html: `<p>Your code is: <strong>${code}</strong></p>`,
 });
