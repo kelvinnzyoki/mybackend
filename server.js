@@ -31,35 +31,16 @@ app.use(express.json());
 let pool;
 
 try {
-  // Option A: Preferred - rely on query params in DATABASE_URL (most stable with Neon)
-  // Make sure your env var looks like:
-  // postgresql://user:pass@ep-xxx-xxx.aws.neon.tech/dbname?sslmode=require
-  //    or even better: ?sslmode=require&channel_binding=require  (Neon dashboard sometimes includes this now)
+  
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    // Only add ssl override if needed (usually not when using ?sslmode= in string)
-    // ssl: { rejectUnauthorized: false }   // ← fallback only if you get SSL handshake errors
-    // connectionTimeoutMillis: 10000,      // optional: prevent hanging forever
-    // idleTimeoutMillis: 30000,            // optional
-    // max: 20,                             // optional: limit pool size on Railway free tier
+
+    ssl: { rejectUnauthorized: false }   // ← fallback only if you get SSL handshake errors
+     connectionTimeoutMillis: 10000,      // optional: prevent hanging forever
+     idleTimeoutMillis: 30000,            // optional
+     max: 20,                             // optional: limit pool size on Railway free tier
   });
 
-  // Option B: Explicit config (use if you split env vars or have issues with connection string)
-  // pool = new Pool({
-  //   host: process.env.PGHOST,
-  //   database: process.env.PGDATABASE,
-  //   user: process.env.PGUSER,
-  //   password: process.env.PGPASSWORD,
-  //   port: 5432,
-  //   ssl: {
-  //     require: true,
-  //     rejectUnauthorized: false   // ← most common working setting for Neon in 2025/2026
-  //   },
-  // });
-
-  // ────────────────────────────────────────────────
-  // Test & log connection status on startup (very important!)
-  // ────────────────────────────────────────────────
   (async () => {
     try {
       const client = await pool.connect();
