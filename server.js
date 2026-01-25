@@ -163,8 +163,8 @@ app.post("/send-code", async (req, res) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
   const { data, error } = await resend.emails.send({
-  from: "onboarding@resend.dev",                  // Official allowed sender
-  to: "kelvinnzyokimaitha@gmail.com",          // YOUR real email (the one you registered Resend with)
+  from: "cctamcc.site",                  // Official allowed sender
+  to: email,          
   subject: "Verification Code Test",
   html: `<p>Your code is: <strong>${code}</strong></p>`,
 });
