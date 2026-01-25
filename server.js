@@ -35,11 +35,12 @@ try {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 
-    ssl: { rejectUnauthorized: false }   // ← fallback only if you get SSL handshake errors
+    ssl: { rejectUnauthorized: true },   // ← fallback only if you get SSL handshake errors
      connectionTimeoutMillis: 10000,      // optional: prevent hanging forever
      idleTimeoutMillis: 30000,            // optional
      max: 20,                             // optional: limit pool size on Railway free tier
   });
+
 
   (async () => {
     try {
@@ -65,6 +66,8 @@ try {
 } catch (setupErr) {
   console.error("PostgreSQL pool setup failed:", setupErr);
 }
+
+
 
 /**********************************
  * REDIS
