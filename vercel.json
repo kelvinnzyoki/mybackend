@@ -1,19 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/server.js"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "rewrites": [
+    { "source": "/", "destination": "/api/index" },
+    { "source": "/health", "destination": "/api/health" },
+    { "source": "/send-code", "destination": "/api/send-code" },
+    { "source": "/signup", "destination": "/api/signup" },
+    { "source": "/login", "destination": "/api/login" }
+  ]
 }
-
