@@ -146,10 +146,10 @@ app.post("/send-code", async (req, res) => {
   
   try {
   await resend.emails.send({
-    from: "cctamcc.site",
+    from: "<no-reply@cctamcc.site>",
     to: email,
     subject: "Verification Code",
-    html: `<p>Your code is: ${code}</p>`,
+    html: `<p>Your code is: ${code}</p>`
   });
 
   await redisClient.setEx(email, 300, code); // store code for 5 min
