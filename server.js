@@ -104,7 +104,7 @@ app.post("/send-code", async (req, res) => {
     
     // ⚠️ CRITICAL: Make sure this email is verified in Resend dashboard
     const result = await resend.emails.send({
-      from: "onboarding@resend.dev", // ✅ Use Resend's default for testing
+      from: "noreply@cctamcc.site", // ✅ Use Resend's default for testing
       // Change to "noreply@cctamcc.site" after domain verification
       to: email,
       subject: "Your Verification Code",
