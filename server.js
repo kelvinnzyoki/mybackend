@@ -16,7 +16,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     "https://kelvinnzyoki.github.io",
-    "https://kelvinnzyoki.github.io.TAM",
+    "https://kelvinnzyoki.github.io/TAM",
     "http://localhost:5500",  // For local testing
     "http://127.0.0.1:5500"
   ], 
@@ -141,29 +141,55 @@ app.get("/", (_, res) => res.send("🚀 Backend is live"));
 
 // PHASE 1: SEND EMAIL CODE
 app.post("/send-code", async (req, res) => {
-  const { email } = req.body;
-  if (!email || !isValidEmail(email)) return res.status(400).json({ message: "Valid email required" });
-
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-
+  console.log("📧 /send-code called with:", req.body);
   
-  try {
-  await resend.emails.send({
-    from: "<no-reply@cctamcc.site>",
-    to: email,
-    subject: "Verification Code",
-    html: `<p>Your code is: ${code}</p>`,
-  });
-
-  await redisClient.setEx(email, 300, code); // store code for 5 min
-
-  res.json({ success: true });
-} catch (err) {
-  console.error("Send code error:", err);
-  res.status(500).json({ message: "Failed to send code" });
+  const { email } = req.body;
+  if (!email || !isValidEmail(email)) {
+    console.log("❌ Invalid email:", email);
+    return res.status(400).json({ message: "Valid email required" });
   }
 
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  console.log("🔑 Generated code for", email, ":", code);
+
+  try {
+    // Check Redis connection first
+    if (!redisClient.isOpen) {
+      console.log("⚠️ Redis not connected, attempting to connect...");
+      await connectRedis();
+    }
+
+    // Send email
+    console.log("📨 Attempting to send email via Resend...");
+    const emailResult = await resend.emails.send({
+      from: "noreply@cctamcc.site", // ✅ MAKE SURE THIS IS VERIFIED IN RESEND
+      to: email,
+      subject: "Verification Code",
+      html: `<p>Your verification code is: <strong>${code}</strong></p>`,
+    });
+    
+    console.log("✅ Email sent successfully:", emailResult);
+
+    // Store in Redis
+    console.log("💾 Storing code in Redis...");
+    await redisClient.setEx(email, 300, code);
+    console.log("✅ Code stored in Redis");
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Send code error:", err);
+    console.error("Error details:", {
+      message: err.message,
+      stack: err.stack,
+      response: err.response?.data
+    });
+    res.status(500).json({ 
+      message: "Failed to send code",
+      error: err.message // Only in development, remove in production
+    });
+  }
 });
+
     
 
 
@@ -202,21 +228,37 @@ app.post("/signup", async (req, res) => {
 
 // LOGIN
 app.post("/login", async (req, res) => {
+  console.log("🔐 /login called with email:", req.body.email);
+  
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Email and password required" });
+  if (!email || !password) {
+    console.log("❌ Missing credentials");
+    return res.status(400).json({ message: "Email and password required" });
+  }
 
   try {
+    console.log("🔍 Querying database for user...");
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (!result.rows.length) return res.status(400).json({ message: "Invalid credentials" });
+    
+    if (!result.rows.length) {
+      console.log("❌ User not found:", email);
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
+    console.log("✅ User found, checking password...");
     const user = result.rows[0];
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ message: "Invalid credentials" });
+    
+    if (!match) {
+      console.log("❌ Password mismatch");
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
+    console.log("✅ Login successful for:", email);
     res.json({ success: true, user: { email: user.email, username: user.username } });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Login error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
