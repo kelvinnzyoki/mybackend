@@ -467,7 +467,7 @@ app.get("/total-score", async (req, res) => {
 
   try {
     const query = `
-      SELECT SUM(score::int) AS total_score
+      SELECT SUM(score) AS total_score
       FROM (
         SELECT DISTINCT ON (date) score FROM pushups WHERE email = $1
         UNION ALL
@@ -482,11 +482,10 @@ app.get("/total-score", async (req, res) => {
     `;
     const result = await pool.query(query, [email]);
     
-    // If no scores exist, result.rows[0].total_score will be null. 
-    // We use || 0 to return 0 instead.
+    // If no scores exist, total_score will be null
     const total = result.rows[0]?.total_score || 0;
     
-    res.json({ success: true, total_score: parseInt(total) });
+    res.json({ success: true, total_score: total });
   } catch (err) {
     console.error("Total score error:", err);
     res.status(500).json({ success: false, message: "Error calculating score" });
@@ -494,29 +493,32 @@ app.get("/total-score", async (req, res) => {
 });
 
 
-app.get("/leaderboard", async (_, res) => {
+app.get("/leaderboard", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT email, SUM(score::int) AS total_score
+      SELECT email, SUM(score) AS total_score 
       FROM (
         SELECT DISTINCT ON (email, date) email, score FROM pushups
-        UNION ALL
+        UNION ALL 
         SELECT DISTINCT ON (email, date) email, score FROM situps
-        UNION ALL
+        UNION ALL 
         SELECT DISTINCT ON (email, date) email, score FROM squats
-        UNION ALL
+        UNION ALL 
         SELECT DISTINCT ON (email, date) email, score FROM steps
-        UNION ALL
+        UNION ALL 
         SELECT DISTINCT ON (email, date) email, score FROM addictions
-      ) s
-      GROUP BY email ORDER BY total_score DESC LIMIT 10;
+      ) s 
+      GROUP BY email 
+      ORDER BY total_score DESC 
+      LIMIT 10;
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error("Leaderboard error:", err);
     res.status(500).json({ message: "Leaderboard error" });
   }
 });
+
 
 // Startup
 (async () => {
