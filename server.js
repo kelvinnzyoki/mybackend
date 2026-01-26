@@ -196,35 +196,110 @@ app.post("/send-code", async (req, res) => {
     
 // PHASE 2: SIGNUP
 app.post("/signup", async (req, res) => {
+  console.log("👤 /signup called");
+  console.log("Request body:", req.body);
+  
   const { email, code, username, password, dob } = req.body;
-  if (!email || !username || !password || !dob || !code) return res.status(400).json({ message: "All fields required" });
-  if (password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters" });
-  // Add DOB validation if needed (e.g., Date.parse(dob))
+  
+  if (!email || !username || !password || !dob || !code) {
+    console.log("❌ Missing fields");
+    return res.status(400).json({ message: "All fields required" });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ message: "Password must be at least 8 characters" });
+  }
+
+  // ✅ NEW: Validate date format
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(dob)) {
+    console.log("❌ Invalid date format:", dob);
+    return res.status(400).json({ 
+      message: "Invalid date format. Please use YYYY-MM-DD format (e.g., 2002-05-15)" 
+    });
+  }
+
+  // ✅ NEW: Validate it's a real date
+  const dobDate = new Date(dob);
+  if (isNaN(dobDate.getTime())) {
+    console.log("❌ Invalid date value:", dob);
+    return res.status(400).json({ message: "Invalid date of birth" });
+  }
+
+  // ✅ NEW: Check age (must be at least 13 years old, for example)
+  const today = new Date();
+  const age = today.getFullYear() - dobDate.getFullYear();
+  if (age < 13) {
+    return res.status(400).json({ message: "You must be at least 13 years old" });
+  }
 
   try {
-    const storedCode = await redisClient.get(email);
-    if (!storedCode || storedCode !== code) {
-      return res.status(400).json({ message: "Invalid or expired code" });
+    // Verify code
+    const storedData = verificationCodes.get(email);
+    
+    if (!storedData) {
+      console.log("❌ No code found for:", email);
+      return res.status(400).json({ message: "Code expired or not found" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (Date.now() - storedData.timestamp > 300000) {
+      verificationCodes.delete(email);
+      console.log("❌ Code expired");
+      return res.status(400).json({ message: "Code expired" });
+    }
 
-    await pool.query(
-      `INSERT INTO users (username, email, password, dob) VALUES ($1, $2, $3, $4)`,
+    if (storedData.code !== code) {
+      console.log("❌ Invalid code. Expected:", storedData.code, "Got:", code);
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+
+    console.log("✅ Code verified");
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("✅ Password hashed");
+
+    // Insert user
+    console.log("💾 Inserting user with DOB:", dob);
+    
+    const result = await pool.query(
+      `INSERT INTO users (username, email, password, dob) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING id, username, email, created_at`,
       [username, email, hashedPassword, dob]
     );
 
-    await redisClient.del(email);
-    res.json({ success: true });
+    console.log("✅ User created successfully:", result.rows[0]);
+
+    // Clean up code
+    verificationCodes.delete(email);
+
+    res.json({ 
+      success: true, 
+      message: "Account created successfully"
+    });
+    
   } catch (err) {
-    console.error(err);
-    if (err.code === '23505') { // PG unique violation
+    console.error("❌ Signup error:");
+    console.error("Error code:", err.code);
+    console.error("Error message:", err.message);
+    console.error("Full error:", err);
+    
+    if (err.code === '23505') {
       res.status(409).json({ message: "Email or username already exists" });
+    } else if (err.code === '42P01') {
+      res.status(500).json({ message: "Database table does not exist" });
+    } else if (err.code === '22007') {
+      res.status(400).json({ message: "Invalid date format. Please check your date of birth" });
     } else {
-      res.status(500).json({ message: "Database error" });
+      res.status(500).json({ 
+        message: "Database error",
+        error: process.env.NODE_ENV !== 'production' ? err.message : undefined
+      });
     }
   }
 });
+
 
 // LOGIN
 app.post("/login", async (req, res) => {
