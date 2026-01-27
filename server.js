@@ -547,7 +547,7 @@ app.get("/leaderboard", async (req, res) => {
 
 
 // --- ROUTE: SAVE STOIC AUDIT ---
-app.post('/api/user/audit', authenticateToken, async (req, res) => {
+app.post('/api/audit/save', authenticateToken, async (req, res) => {
     const { victory, defeat } = req.body;
     try {
         await pool.query(
@@ -574,6 +574,20 @@ app.get('/api/user/recovery', authenticateToken, async (req, res) => {
         res.json(result.rows[0]);
     } catch (err) {
         res.status(500).json({ error: "Sync Failed" });
+    }
+});
+
+
+app.get('/api/audit/load', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT victory, defeat FROM audits WHERE user_id = $1',
+            [req.user.id]
+        );
+        // If no audit exists yet, send empty strings
+        res.json(result.rows[0] || { victory: "", defeat: "" });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load audit" });
     }
 });
 
