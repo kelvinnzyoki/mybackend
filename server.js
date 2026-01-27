@@ -547,14 +547,14 @@ app.get("/leaderboard", async (req, res) => {
 
 
 // --- ROUTE: SAVE STOIC AUDIT ---
-app.post('/api/audit/save', authenticateToken, async (req, res) => {
+app.post('/api/audit/load', authenticateToken, async (req, res) => {
     const { victory, defeat } = req.body;
     try {
         await pool.query(
-            `INSERT INTO audits (user_id, victory, defeat, updated_at) 
+            `INSERT INTO audits (victory, defeat, updated_at) 
              VALUES ($1, $2, $3, NOW()) 
              ON CONFLICT (user_id) DO UPDATE 
-             SET victory = $2, defeat = $3, updated_at = NOW()`,
+             SET victory = $1, defeat = $2, updated_at = NOW()`,
             [req.user.id, victory, defeat]
         );
         res.json({ success: true, message: "Audit Synced" });
@@ -562,6 +562,26 @@ app.post('/api/audit/save', authenticateToken, async (req, res) => {
         res.status(500).json({ error: "Database Error" });
     }
 });
+
+
+
+app.post('/api/user/recovery', authenticateToken, async (req, res) => {
+    const { sleep, hydration, stress, score } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO recovery_logs (sleep, hydration, stress, readiness_score, date) 
+             VALUES ($1, $2, $3, $4, CURRENT_DATE)
+             ON CONFLICT (user_id, date) DO UPDATE 
+             SET sleep = $1, hydration = $2, stress = $3, readiness_score = $4`,
+            [req.user.id, sleep, hydration, stress, score]
+        );
+        res.json({ success: true, message: "Biometrics Archived" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Database Error" });
+    }
+});
+
 
 
 // --- ROUTE: FETCH RECOVERY DATA ---
@@ -578,7 +598,7 @@ app.get('/api/user/recovery', authenticateToken, async (req, res) => {
 });
 
 
-app.get('/api/audit/load', authenticateToken, async (req, res) => {
+app.get('/api/audit/save', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
             'SELECT victory, defeat FROM audits WHERE user_id = $1',
