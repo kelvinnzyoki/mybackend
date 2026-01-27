@@ -26,7 +26,7 @@ app.use(cors({
 app.use(express.json());
 
 
-const SECRET_KEY = "ALPHA_PROTOCOL_SECRET";
+const SECRET_KEY = "JWT_SECRET";
 
 // --- MIDDLEWARE: PROTECT THE PERIMETER ---
 const authenticateToken = (req, res, next) => {
