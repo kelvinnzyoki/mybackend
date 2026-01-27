@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const jwt = require('jsonwebtoken');
 const helmet = require("helmet");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
@@ -23,6 +24,23 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+
+const SECRET_KEY = "ALPHA_PROTOCOL_SECRET";
+
+// --- MIDDLEWARE: PROTECT THE PERIMETER ---
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, SECRET_KEY, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
 
 /**********************************
  * DATABASE (PostgreSQL) - Neon.tech
@@ -524,6 +542,39 @@ app.get("/leaderboard", async (req, res) => {
     console.error("Leaderboard error:", err);
     res.status(500).json({ message: "Leaderboard error" });
   }
+});
+
+
+
+// --- ROUTE: SAVE STOIC AUDIT ---
+app.post('/api/user/audit', authenticateToken, async (req, res) => {
+    const { victory, defeat } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO audits (user_id, victory, defeat, updated_at) 
+             VALUES ($1, $2, $3, NOW()) 
+             ON CONFLICT (user_id) DO UPDATE 
+             SET victory = $2, defeat = $3, updated_at = NOW()`,
+            [req.user.id, victory, defeat]
+        );
+        res.json({ success: true, message: "Audit Synced" });
+    } catch (err) {
+        res.status(500).json({ error: "Database Error" });
+    }
+});
+
+
+// --- ROUTE: FETCH RECOVERY DATA ---
+app.get('/api/user/recovery', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM recovery_logs WHERE user_id = $1 ORDER BY date DESC LIMIT 1',
+            [req.user.id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: "Sync Failed" });
+    }
 });
 
 
