@@ -513,7 +513,13 @@ app.get("/leaderboard", async (req, res) => {
       ORDER BY total_score DESC 
       LIMIT 10;
     `);
-    res.json(result.rows);
+
+    res.json({
+  success: true,
+  data: result.rows
+});
+  
+  
   } catch (err) {
     console.error("Leaderboard error:", err);
     res.status(500).json({ message: "Leaderboard error" });
