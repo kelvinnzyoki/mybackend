@@ -245,42 +245,38 @@ app.post("/send-code", async (req, res) => {
   }
 });
 
+
 // LOGIN
 app.post("/login", async (req, res) => {
-  console.log("🔐 /login called with email:", req.body.email);
-  
   const { email, password } = req.body;
-  if (!email || !password) {
-    console.log("❌ Missing credentials");
-    return res.status(400).json({ message: "Email and password required" });
-  }
-
   try {
-    console.log("🔍 Querying database for user...");
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
     
-    if (!result.rows.length) {
-      console.log("❌ User not found:", email);
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
+    if (result.rows.length === 0) return res.status(400).json({ message: "Invalid credentials" });
 
-    console.log("✅ User found, checking password...");
     const user = result.rows[0];
     const match = await bcrypt.compare(password, user.password);
     
-    if (!match) {
-      console.log("❌ Password mismatch");
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
+    if (match) {
+      // ✅ INCLUDE THE ID IN THE TOKEN PAYLOAD
+      const token = jwt.sign(
+        { id: user.id, email: user.email }, 
+        SECRET_KEY, 
+        { expiresIn: '7d' }
+      );
 
-    console.log("✅ Login successful for:", email);
-    res.json({ success: true, user: { email: user.email, username: user.username } });
+      res.json({ 
+        success: true, 
+        token: token, // Send this back to frontend
+        user: { email: user.email, username: user.username } 
+      });
+    } else {
+      res.status(400).json({ message: "Invalid credentials" });
+    }
   } catch (err) {
-    console.error("❌ Login error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
-
 /**********************************
  * SCORE & LEADERBOARD
  **********************************/
