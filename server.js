@@ -267,7 +267,7 @@ app.post("/login", async (req, res) => {
 
       res.json({ 
         success: true, 
-        token: token, // Send this back to frontend
+        token: auth_token, // Send this back to frontend
         user: { email: user.email, username: user.username } 
       });
     } else {
