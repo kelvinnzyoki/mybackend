@@ -89,11 +89,16 @@ const authenticate = async (req, res, next) => {
 };
 
 /* ===================== RATE LIMIT LOGIN ===================== */
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: "Too many login attempts"
+
+const rateLimit = require("express-rate-limit");
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 100,                  // limit each IP to 100 requests per window
+  message: { success: false, message: "Too many requests, try again later." },
 });
+
+app.use(limiter); // Apply globally
 
 /* ===================== HEALTH CHECK ===================== */
 app.get("/", (_, res) => res.send("🚀 Secure Backend Live"));
