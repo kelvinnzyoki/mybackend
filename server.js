@@ -117,30 +117,70 @@ app.post("/send-code", async (req, res) => {
 
 /* ===================== SIGNUP ===================== */
 app.post("/signup", async (req, res) => {
-  const { email, code, username, password, dob } = req.body;
-  const key = crypto.createHash("sha256").update(email).digest("hex");
-
-  const stored = await redis.get(`verify:${key}`);
-  if (!stored || stored !== code) {
-    return res.status(400).json({ message: "Invalid or expired code" });
-  }
-
-  const hashed = await bcrypt.hash(password, 12);
-
   try {
-    await pool.query(
-      `INSERT INTO users (username, email, password, dob) VALUES ($1,$2,$3,$4)`,
-      [username, email, hashed, dob]
+    const { email, code, username, password, dob } = req.body;
+
+    // --- Validate input ---
+    if (!email || !username || !password || !dob || !code) {
+      return res.status(400).json({ success: false, message: "All fields required" });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
+    }
+
+    // --- Validate code from Redis ---
+    const storedCode = await redisClient.get(email);
+    if (!storedCode || storedCode !== code) {
+      return res.status(400).json({ success: false, message: "Invalid or expired verification code" });
+    }
+
+    // --- Hash password ---
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // --- Insert user into database ---
+    const result = await pool.query(
+      `INSERT INTO users (username, email, password, dob)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, username, email`,
+      [username, email, hashedPassword, dob]
     );
 
-    await redis.del(`verify:${key}`);
-    res.json({ success: true });
+    const newUser = result.rows[0];
 
-  } catch {
-    res.status(409).json({ message: "User already exists" });
+    // --- Remove code from Redis ---
+    await redisClient.del(email);
+
+    // --- Generate JWT token for immediate login (optional) ---
+    const token = jwt.sign(
+      { id: newUser.id, email: newUser.email },
+      SECRET_KEY,
+      { expiresIn: "7d" }
+    );
+
+    // --- Respond with JSON ---
+    res.status(201).json({
+      success: true,
+      message: "Signup successful",
+      token,
+      user: newUser
+    });
+
+  } catch (err) {
+    console.error("Signup error:", err);
+
+    // Handle unique email/username violation (Postgres error code 23505)
+    if (err.code === "23505") {
+      return res.status(409).json({ success: false, message: "Email or username already exists" });
+    }
+
+    // Catch-all server error
+    res.status(500).json({
+      success: false,
+      message: "Server error during signup",
+      error: err.message // Only include in dev, remove in prod
+    });
   }
 });
-
 /* ===================== LOGIN ===================== */
 app.post("/login", loginLimiter, async (req, res) => {
   const { email, password } = req.body;
