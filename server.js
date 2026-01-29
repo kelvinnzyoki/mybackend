@@ -159,7 +159,7 @@ app.post("/signup", async (req, res) => {
     await redis.del(email);
 
     // --- Generate JWT token for immediate login (optional) ---
-   const token = createAccessToken(newUser);  // using your helper
+   
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email },
       SECRET_KEY,
