@@ -90,16 +90,14 @@ const authenticate = async (req, res, next) => {
 
 /* ===================== RATE LIMIT LOGIN ===================== */
 
-const rateLimit = require("express-rate-limit");
+
 
 // --- Rate limiter ---
-app.use(rateLimit({
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: "Too many requests, try again later." },
-}));
+  max: 5, // fewer attempts for login
+  message: { success: false, message: "Too many login attempts, try later." },
+});
 
 
 /* ===================== HEALTH CHECK ===================== */
@@ -161,6 +159,7 @@ app.post("/signup", async (req, res) => {
     await redisClient.del(email);
 
     // --- Generate JWT token for immediate login (optional) ---
+   const token = createAccessToken(newUser);  // using your helper
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email },
       SECRET_KEY,
@@ -385,8 +384,8 @@ app.post('/api/user/recovery', authenticate, async (req, res) => {
 
 app.get('/api/user/recovery', authenticate, async (req, res) => {
   
-  broadcastRecoveryUpdate(req.user.id, {
-  sleep, hydration, stress, score
+  /*broadcastRecoveryUpdate(req.user.id, {
+  sleep, hydration, stress, score*/
 });
   try {
     const result = await pool.query(
