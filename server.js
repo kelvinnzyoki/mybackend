@@ -180,19 +180,43 @@ app.get('/api/user/recovery', authenticate, async (req, res) => {
 });
 
 /* ===================== SCORES & LEADERBOARD ===================== */
-
-const scoreTables = ["pushups", "situps", "squats", "steps", "addictions"];
+/* ===================== SCORE TRACKING ROUTES ===================== */
+const scoreTables = ["addictions", "pushups", "situps", "squats", "steps"];
 
 scoreTables.forEach(table => {
+    // Each route is generated: e.g., app.post("/pushups", ...)
     app.post(`/${table}`, authenticate, async (req, res) => {
         const { score, date } = req.body;
-        await pool.query(
-            `INSERT INTO ${table} (user_id, date, score) VALUES ($1, $2, $3) ON CONFLICT (user_id, date) DO UPDATE SET score=EXCLUDED.score`,
-            [req.user.id, date || new Date(), score]
-        );
-        res.json({ success: true });
+        
+        // 1. Validation: Ensure score is a valid number
+        if (score === undefined || isNaN(score)) {
+            return res.status(400).json({ success: false, message: "Valid score required" });
+        }
+
+        try {
+            // 2. Database Operation: Identify user by req.user.id from JWT
+            await pool.query(
+                `INSERT INTO ${table} (user_id, date, score) 
+                 VALUES ($1, $2, $3) 
+                 ON CONFLICT (user_id, date) 
+                 DO UPDATE SET score = EXCLUDED.score`,
+                [
+                    req.user.id,             // Extracted from verified token
+                    date || new Date(),      // Use provided date or today
+                    parseInt(score)          // Ensure integer format
+                ]
+            );
+
+            res.json({ success: true, message: `${table} score synced` });
+
+        } catch (err) {
+            console.error(`Error in /${table}:`, err);
+            res.status(500).json({ success: false, message: "Database Error" });
+        }
     });
 });
+
+
 
 app.get("/total-score", authenticate, async (req, res) => {
     const result = await pool.query(`
