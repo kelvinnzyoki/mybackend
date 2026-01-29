@@ -385,6 +385,44 @@ app.get('/api/audit/save', authenticate, async (req, res) => {
 
 
 
+
+
+
+// **""""""ADMIN PANEL*****""
+async function logAdminAction(adminId, action) {
+  await pool.query(
+    "INSERT INTO admin_logs (action, performed_by) VALUES ($1, $2)",
+    [action, adminId]
+  );
+}
+
+const authorizeAdmin = (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Admins only" });
+  }
+  next();
+};
+
+app.get("/admin/audits", authenticate, authorizeAdmin, async (req, res) => {
+  const audits = await pool.query("SELECT * FROM audits ORDER BY updated_at DESC");
+  res.json(audits.rows);
+});
+
+
+app.delete("/admin/audit/:userId", authenticate, authorizeAdmin, async (req, res) => {
+  await pool.query("DELETE FROM audits WHERE user_id = $1", [req.params.userId]);
+
+  await logAdminAction(req.user.id, `Deleted audit for user ${req.params.userId}`);
+
+  res.json({ success: true });
+});
+
+
+
+
+
+
+
 /* ===================== START SERVER ===================== */
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Secure Server Running on ${PORT}`));
