@@ -15,6 +15,9 @@ const { Resend } = require("resend");
 
 const app = express();
 
+// Trust first proxy (Vercel, Heroku, AWS, etc.)
+app.set("trust proxy", 1);
+
 /* ===================== SECURITY MIDDLEWARE ===================== */
 app.use(helmet());
 app.use(cookieParser());
