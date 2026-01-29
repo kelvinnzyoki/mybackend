@@ -92,13 +92,15 @@ const authenticate = async (req, res, next) => {
 
 const rateLimit = require("express-rate-limit");
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 100,                  // limit each IP to 100 requests per window
+// --- Rate limiter ---
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { success: false, message: "Too many requests, try again later." },
-});
+}));
 
-app.use(limiter); // Apply globally
 
 /* ===================== HEALTH CHECK ===================== */
 app.get("/", (_, res) => res.send("🚀 Secure Backend Live"));
