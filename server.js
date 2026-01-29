@@ -137,7 +137,7 @@ app.post("/signup", async (req, res) => {
     }
 
     // --- Validate code from Redis ---
-    const storedCode = await redisClient.get(email);
+    const storedCode = await redis.get(email);
     if (!storedCode || storedCode !== code) {
       return res.status(400).json({ success: false, message: "Invalid or expired verification code" });
     }
@@ -156,7 +156,7 @@ app.post("/signup", async (req, res) => {
     const newUser = result.rows[0];
 
     // --- Remove code from Redis ---
-    await redisClient.del(email);
+    await redis.del(email);
 
     // --- Generate JWT token for immediate login (optional) ---
    const token = createAccessToken(newUser);  // using your helper
