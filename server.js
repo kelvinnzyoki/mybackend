@@ -29,7 +29,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(csurf({ cookie: true }));
+//app.use(csurf({ cookie: true }));
 
 /* ===================== DATABASE ===================== */
 const pool = new Pool({
