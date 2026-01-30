@@ -132,31 +132,38 @@ app.post("/signup", async (req, res) => {
 
     try {
         const storedCode = await redis.get(`verify:${key}`);
-        if (!storedCode || storedCode !== code) return res.status(400).json({ message: "Invalid Code" });
+        if (!storedCode || storedCode !== code) {
+            return res.status(400).json({ message: "Invalid Code" });
+        }
 
         const hashed = await bcrypt.hash(password, 12);
-        await pool.query(
-            "INSERT INTO users (username, email, password, dob) VALUES ($1, $2, $3, $4)",
+        
+        // Fix 1: Assign to newUser and use RETURNING id
+        const newUser = await pool.query(
+            "INSERT INTO users (username, email, password, dob) VALUES ($1, $2, $3, $4) RETURNING id, username",
             [username, email, hashed, dob]
         );
+        
         await redis.del(`verify:${key}`);
 
-        // 3. CREATE THE JWT TOKEN (Just like login)
-        const token = jwt.sign({ id: newUser.rows[0].id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        // Fix 2 & 4: Use your helper function and consistent cookie name
+        const access = createAccessToken(newUser.rows[0]);
+        const refresh = createRefreshToken(newUser.rows[0]);
 
-        // 4. SET THE COOKIE
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: true, // true for production
-            sameSite: 'None', 
-            maxAge: 7 * 24 * 60 * 60 * 1000 
-        });
+        // Sync Redis for security fingerprinting (matches login logic)
+        await redis.set(`ref:${refresh}`, newUser.rows[0].id, { EX: 1209600 });
+        await redis.set(`fp:${newUser.rows[0].id}`, req.headers["user-agent"] + req.ip);
+
+        res.cookie("access_token", access, { ...cookieOptions, maxAge: 900000 });
+        res.cookie("refresh_token", refresh, { ...cookieOptions, maxAge: 1209600000 });
+
         res.json({ success: true, message: "Account created and logged in!" });
     } catch (err) {
-        res.status(500).json({ success: false, message: "Database error" });
+        console.error(err);
+        res.status(500).json({ success: false, message: "Database error or user already exists" });
     }
 });
-});
+
 
 app.post("/login", async (req, res) => {
     const { email, password } = req.body;
