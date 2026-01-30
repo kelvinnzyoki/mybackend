@@ -129,9 +129,7 @@ app.post("/send-code", rateLimit({ windowMs: 15*60*1000, max: 3 }), async (req, 
 app.post("/signup", async (req, res) => {
     const { email, code, username, password, dob } = req.body;
     const key = getHash(email);
-    if (dob && dob.length === 4) {
-        dob = `${dob}-01-01`;
-    }
+    
 
     try {
         // 1. VERIFY CODE FIRST
