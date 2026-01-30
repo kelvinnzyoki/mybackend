@@ -21,7 +21,18 @@ app.use(express.json());
 
 // Strict CORS for Production
 app.use(cors({
-    origin: ["https://kelvinnzyoki.github.io", "https://kelvinnzyoki.github.io/TAM", "http://localhost:5500"],
+    origin: function(origin, callback) {
+        const allowed = [
+            "https://kelvinnzyoki.github.io",
+            "http://localhost:5500"
+        ];
+        // Allow requests with no origin (mobile apps, curl, etc)
+        if (!origin || allowed.some(url => origin.startsWith(url))) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ["GET", "POST", "OPTIONS"]
 }));
@@ -203,8 +214,11 @@ app.post('/api/user/recovery', authenticate, async (req, res) => {
 });
 
 app.get('/api/user/recovery', authenticate, async (req, res) => {
-    const result = await pool.query("SELECT sleep, hydration, stress, readiness_score FROM recovery_logs WHERE user_id = $1 ORDER BY date DESC LIMIT 1", [req.user.id]);
-    res.json(result.rows[0] || null);
+    const result = await pool.query(
+        "SELECT sleep, hydration, stress, readiness_score FROM recovery_logs WHERE user_id = $1 ORDER BY date DESC LIMIT 1", 
+        [req.user.id]
+    );
+    res.json(result.rows[0] || { sleep: 0, hydration: 0, stress: 5, readiness_score: 0 });
 });
 
 /* ===================== SCORES & LEADERBOARD ===================== */
@@ -257,19 +271,21 @@ app.get("/total-score", authenticate, async (req, res) => {
 
 
 app.get("/leaderboard", async (req, res) => {
-  const result = await pool.query(`
-    SELECT u.username, SUM(s.score) AS total_score 
-    FROM (
-      SELECT user_id, score FROM pushups
-      UNION ALL SELECT user_id, score FROM situps
-      -- ... other tables
-    ) s
-    JOIN users u ON u.id = s.user_id
-    GROUP BY u.username
-    ORDER BY total_score DESC
-    LIMIT 10;
-  `);
-  res.json({ success: true, data: result.rows });
+    const result = await pool.query(`
+        SELECT u.username, SUM(s.score) AS total_score 
+        FROM (
+            SELECT user_id, score FROM pushups
+            UNION ALL SELECT user_id, score FROM situps
+            UNION ALL SELECT user_id, score FROM squats
+            UNION ALL SELECT user_id, score FROM steps
+            UNION ALL SELECT user_id, score FROM addictions
+        ) s
+        JOIN users u ON u.id = s.user_id
+        GROUP BY u.username
+        ORDER BY total_score DESC
+        LIMIT 10
+    `);
+    res.json({ success: true, data: result.rows });
 });
 
 /* ===================== LOGOUT ===================== */
