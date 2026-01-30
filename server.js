@@ -207,17 +207,27 @@ app.post("/api/audit/save", authenticate, async (req, res) => {
 
 
 app.get('/api/audit/load', authenticate, async (req, res) => {
-    const result = await pool.query(
-        "SELECT victory, defeat, focus, ego_control FROM audits WHERE user_id = $1", 
-        [req.user.id]
-    );
-    res.json(result.rows[0] || { victory: "", defeat: "", focus: 50, ego_control: 50 });
+    try {
+        const result = await pool.query(
+            "SELECT victory, defeat, focus, ego_control FROM audits WHERE user_id = $1", 
+            [req.user.id]
+        );
+
+        // If no record exists, return a complete default object
+        const data = result.rows[0] || { 
+            victory: "", 
+            defeat: "", 
+            focus: 50, 
+            ego_control: 50 
+        };
+
+        res.json(data);
+    } catch (err) {
+        console.error("Audit load error:", err);
+        res.status(500).json({ error: "Failed to load audit data" });
+    }
 });
 
-app.get('/api/audit/load', authenticate, async (req, res) => {
-    const result = await pool.query("SELECT victory, defeat FROM audits WHERE user_id = $1", [req.user.id]);
-    res.json(result.rows[0] || { victory: "", defeat: "" });
-});
 
 // RECOVERY LOGS
 app.post('/api/user/recovery', authenticate, async (req, res) => {
