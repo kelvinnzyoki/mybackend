@@ -131,36 +131,83 @@ app.post("/signup", async (req, res) => {
     const key = getHash(email);
 
     try {
+        // 1. VERIFY CODE FIRST
         const storedCode = await redis.get(`verify:${key}`);
         if (!storedCode || storedCode !== code) {
-            return res.status(400).json({ message: "Invalid Code" });
+            return res.status(400).json({ message: "Invalid or expired verification code" });
         }
 
+        // 2. CHECK IF EMAIL ALREADY EXISTS (CRITICAL FIX)
+        const existingEmail = await pool.query(
+            "SELECT id FROM users WHERE email = $1",
+            [email]
+        );
+
+        if (existingEmail.rows.length > 0) {
+            await redis.del(`verify:${key}`); // Clean up the code
+            return res.status(409).json({ 
+                success: false, 
+                message: "This email is already registered. Please login instead." 
+            });
+        }
+
+        // 3. CHECK IF USERNAME ALREADY EXISTS
+        const existingUsername = await pool.query(
+            "SELECT id FROM users WHERE username = $1",
+            [username]
+        );
+
+        if (existingUsername.rows.length > 0) {
+            return res.status(409).json({ 
+                success: false, 
+                message: "Username already taken. Please choose another." 
+            });
+        }
+
+        // 4. CREATE NEW USER
         const hashed = await bcrypt.hash(password, 12);
         
-        // Fix 1: Assign to newUser and use RETURNING id
         const newUser = await pool.query(
             "INSERT INTO users (username, email, password, dob) VALUES ($1, $2, $3, $4) RETURNING id, username",
             [username, email, hashed, dob]
         );
         
+        // 5. DELETE VERIFICATION CODE
         await redis.del(`verify:${key}`);
 
-        // Fix 2 & 4: Use your helper function and consistent cookie name
+        // 6. CREATE TOKENS
         const access = createAccessToken(newUser.rows[0]);
         const refresh = createRefreshToken(newUser.rows[0]);
 
-        // Sync Redis for security fingerprinting (matches login logic)
+        // 7. STORE TOKENS IN REDIS
         await redis.set(`ref:${refresh}`, newUser.rows[0].id, { EX: 1209600 });
         await redis.set(`fp:${newUser.rows[0].id}`, req.headers["user-agent"] + req.ip);
 
+        // 8. SET COOKIES
         res.cookie("access_token", access, { ...cookieOptions, maxAge: 900000 });
         res.cookie("refresh_token", refresh, { ...cookieOptions, maxAge: 1209600000 });
 
-        res.json({ success: true, message: "Account created and logged in!" });
+        res.json({ 
+            success: true, 
+            message: "Account created successfully!",
+            user: { username: newUser.rows[0].username }
+        });
+
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Database error or user already exists" });
+        console.error("Signup error:", err);
+        
+        // Handle unique constraint violation (database level)
+        if (err.code === '23505') { // PostgreSQL unique violation code
+            return res.status(409).json({ 
+                success: false, 
+                message: "Email or username already exists" 
+            });
+        }
+        
+        res.status(500).json({ 
+            success: false, 
+            message: "Server error. Please try again." 
+        });
     }
 });
 
