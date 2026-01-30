@@ -278,19 +278,18 @@ app.get("/feed", authenticate, async (req, res) => {
                 u.username,
                 a.victory,
                 a.updated_at,
-                COALESCE(SUM(s.score), 0) as total_score
+                (
+                    SELECT COALESCE(SUM(score), 0) 
+                    FROM (
+                        SELECT score FROM pushups WHERE user_id = u.id
+                        UNION ALL SELECT score FROM situps WHERE user_id = u.id
+                        UNION ALL SELECT score FROM squats WHERE user_id = u.id
+                        UNION ALL SELECT score FROM steps WHERE user_id = u.id
+                        UNION ALL SELECT score FROM addictions WHERE user_id = u.id
+                    ) sub
+                ) as total_score
             FROM users u
-            LEFT JOIN audits a ON u.id = a.user_id
-            LEFT JOIN (
-                SELECT user_id, SUM(score) as score FROM (
-                    SELECT user_id, score FROM pushups
-                    UNION ALL SELECT user_id, score FROM situps
-                    UNION ALL SELECT user_id, score FROM squats
-                    UNION ALL SELECT user_id, score FROM steps
-                    UNION ALL SELECT user_id, score FROM addictions
-                ) all_scores
-                GROUP BY user_id
-            ) s ON u.id = s.user_id
+            JOIN audits a ON u.id = a.user_id
             WHERE a.victory IS NOT NULL AND a.victory != ''
             ORDER BY a.updated_at DESC
             LIMIT 20
@@ -299,10 +298,9 @@ app.get("/feed", authenticate, async (req, res) => {
         res.json({ success: true, data: result.rows });
     } catch (err) {
         console.error("Feed error:", err);
-        res.status(500).json({ success: false, message: "Failed to load feed" });
+        res.status(500).json({ success: false, message: "Database Error" });
     }
 });
-
 
 
 app.get("/total-score", authenticate, async (req, res) => {
