@@ -140,8 +140,22 @@ app.post("/signup", async (req, res) => {
             [username, email, hashed, dob]
         );
         await redis.del(`verify:${key}`);
-        res.json({ success: true });
-    } catch (err) { res.status(409).json({ message: "User already exists" }); }
+
+        // 3. CREATE THE JWT TOKEN (Just like login)
+        const token = jwt.sign({ id: newUser.rows[0].id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+        // 4. SET THE COOKIE
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true, // true for production
+            sameSite: 'None', 
+            maxAge: 7 * 24 * 60 * 60 * 1000 
+        });
+        res.json({ success: true, message: "Account created and logged in!" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Database error" });
+    }
+});
 });
 
 app.post("/login", async (req, res) => {
