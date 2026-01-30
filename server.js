@@ -110,6 +110,11 @@ app.post("/send-code", rateLimit({ windowMs: 15*60*1000, max: 3 }), async (req, 
     } catch (err) { res.status(500).json({ message: "Email failed" }); }
 });
 
+
+
+
+
+
 app.post("/signup", async (req, res) => {
     const { email, code, username, password, dob } = req.body;
     const key = getHash(email);
@@ -146,6 +151,28 @@ app.post("/login", async (req, res) => {
     res.cookie("access_token", access, { ...cookieOptions, maxAge: 900000 });
     res.cookie("refresh_token", refresh, { ...cookieOptions, maxAge: 1209600000 });
     res.json({ success: true, user: { username: user.username } });
+});
+
+
+
+app.post("/auth/refresh", async (req, res) => {
+    const refresh = req.cookies.refresh_token;
+    if (!refresh) return res.status(401).json({ message: "No refresh token" });
+
+    try {
+        const userId = await redis.get(`ref:${refresh}`);
+        if (!userId) return res.status(403).json({ message: "Invalid refresh token" });
+
+        const result = await pool.query("SELECT * FROM users WHERE id=$1", [userId]);
+        const user = result.rows[0];
+        if (!user) return res.status(403).json({ message: "User not found" });
+
+        const newAccess = createAccessToken(user);
+        res.cookie("access_token", newAccess, { ...cookieOptions, maxAge: 900000 });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ message: "Refresh failed" });
+    }
 });
 
 /* ===================== ALPHA DATA ROUTES ===================== */
