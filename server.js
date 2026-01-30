@@ -22,7 +22,8 @@ app.use(express.json());
 // Strict CORS for Production
 app.use(cors({
     origin: ["https://kelvinnzyoki.github.io", "https://kelvinnzyoki.github.io/TAM", "http://localhost:5500"],
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "OPTIONS"]
 }));
 
 const cookieOptions = {
