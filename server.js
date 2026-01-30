@@ -190,12 +190,23 @@ app.post("/auth/refresh", async (req, res) => {
 
 // STOIC AUDITS
 app.post('/api/audit/save', authenticate, async (req, res) => {
-    const { victory, defeat } = req.body;
+    const { victory, defeat, focus, ego_control } = req.body;
     await pool.query(
-        "INSERT INTO audits (user_id, victory, defeat, updated_at) VALUES ($1, $2, $3, NOW()) ON CONFLICT (user_id) DO UPDATE SET victory=$2, defeat=$3, updated_at=NOW()",
-        [req.user.id, victory, defeat]
+        `INSERT INTO audits (user_id, victory, defeat, focus, ego_control, updated_at) 
+         VALUES ($1, $2, $3, $4, $5, NOW()) 
+         ON CONFLICT (user_id) 
+         DO UPDATE SET victory=$2, defeat=$3, focus=$4, ego_control=$5, updated_at=NOW()`,
+        [req.user.id, victory, defeat, focus || 50, ego_control || 50]
     );
     res.json({ success: true });
+});
+
+app.get('/api/audit/load', authenticate, async (req, res) => {
+    const result = await pool.query(
+        "SELECT victory, defeat, focus, ego_control FROM audits WHERE user_id = $1", 
+        [req.user.id]
+    );
+    res.json(result.rows[0] || { victory: "", defeat: "", focus: 50, ego_control: 50 });
 });
 
 app.get('/api/audit/load', authenticate, async (req, res) => {
