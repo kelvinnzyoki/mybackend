@@ -270,6 +270,40 @@ scoreTables.forEach(table => {
 });
 
 
+// NEW: Get recent activity feed (scores + victories)
+app.get("/feed", authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                u.username,
+                a.victory,
+                a.updated_at,
+                COALESCE(SUM(s.score), 0) as total_score
+            FROM users u
+            LEFT JOIN audits a ON u.id = a.user_id
+            LEFT JOIN (
+                SELECT user_id, SUM(score) as score FROM (
+                    SELECT user_id, score FROM pushups
+                    UNION ALL SELECT user_id, score FROM situps
+                    UNION ALL SELECT user_id, score FROM squats
+                    UNION ALL SELECT user_id, score FROM steps
+                    UNION ALL SELECT user_id, score FROM addictions
+                ) all_scores
+                GROUP BY user_id
+            ) s ON u.id = s.user_id
+            WHERE a.victory IS NOT NULL AND a.victory != ''
+            ORDER BY a.updated_at DESC
+            LIMIT 20
+        `);
+        
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error("Feed error:", err);
+        res.status(500).json({ success: false, message: "Failed to load feed" });
+    }
+});
+
+
 
 app.get("/total-score", authenticate, async (req, res) => {
     const result = await pool.query(`
