@@ -226,14 +226,22 @@ app.get("/total-score", authenticate, async (req, res) => {
     res.json({ total_score: result.rows[0].total || 0 });
 });
 
+
+
 app.get("/leaderboard", async (req, res) => {
-    const result = await pool.query(`
-        SELECT u.username, SUM(s.score) as total_score 
-        FROM (
-            ${scoreTables.map(t => `SELECT user_id, score FROM ${t}`).join(" UNION ALL ")}
-        ) s JOIN users u ON u.id = s.user_id 
-        GROUP BY u.username ORDER BY total_score DESC LIMIT 10`);
-    res.json({ success: true, data: result.rows });
+  const result = await pool.query(`
+    SELECT u.username, SUM(s.score) AS total_score 
+    FROM (
+      SELECT user_id, score FROM pushups
+      UNION ALL SELECT user_id, score FROM situps
+      -- ... other tables
+    ) s
+    JOIN users u ON u.id = s.user_id
+    GROUP BY u.username
+    ORDER BY total_score DESC
+    LIMIT 10;
+  `);
+  res.json({ success: true, data: result.rows });
 });
 
 /* ===================== LOGOUT ===================== */
