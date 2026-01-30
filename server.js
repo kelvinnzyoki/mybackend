@@ -297,8 +297,6 @@ app.post("/logout", async (req, res) => {
     res.json({ success: true });
 });
 
-(async () => {
-  await connectRedis();
+
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
-})();
