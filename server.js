@@ -106,19 +106,38 @@ app.post("/send-code", rateLimit({ windowMs: 15*60*1000, max: 3 }), async (req, 
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email required" });
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const key = getHash(email);
-
     try {
+        // ✅ CHECK IF EMAIL ALREADY EXISTS
+        const existingUser = await pool.query(
+            "SELECT id FROM users WHERE email = $1",
+            [email]
+        );
+
+        if (existingUser.rows.length > 0) {
+            return res.status(409).json({ 
+                success: false,
+                message: "This email is already registered. Please login instead." 
+            });
+        }
+
+        // Generate and send code only if email is available
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const key = getHash(email);
+
         await resend.emails.send({
             from: "noreply@cctamcc.site",
             to: email,
             subject: "Alpha Protocol Code",
             html: `Your verification code is: <strong>${code}</strong>`
         });
+        
         await redis.setEx(`verify:${key}`, 300, code);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ message: "Email failed" }); }
+
+    } catch (err) {
+        console.error("Send code error:", err);
+        res.status(500).json({ success: false, message: "Email failed" });
+    }
 });
 
 
