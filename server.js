@@ -416,22 +416,44 @@ app.get("/total-score", authenticate, async (req, res) => {
 
 
 
-app.get("/leaderboard", async (req, res) => {
-    const result = await pool.query(`
-        SELECT u.username, SUM(s.score) AS total_score 
-        FROM (
-            SELECT user_id, score FROM pushups
-            UNION ALL SELECT user_id, score FROM situps
-            UNION ALL SELECT user_id, score FROM squats
-            UNION ALL SELECT user_id, score FROM steps
-            UNION ALL SELECT user_id, score FROM addictions
-        ) s
-        JOIN users u ON u.id = s.user_id
-        GROUP BY u.username
-        ORDER BY total_score DESC
-        LIMIT 10
-    `);
-    res.json({ success: true, data: result.rows });
+app.get("/leaderboard", authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.username, SUM(s.score) AS total_score 
+            FROM (
+                SELECT user_id, score FROM pushups
+                UNION ALL SELECT user_id, score FROM situps
+                UNION ALL SELECT user_id, score FROM squats
+                UNION ALL SELECT user_id, score FROM steps
+                UNION ALL SELECT user_id, score FROM addictions
+            ) s
+            JOIN users u ON u.id = s.user_id
+            GROUP BY u.username
+            ORDER BY total_score DESC
+            LIMIT 10
+        `);
+
+        // Check if we have data
+        if (result.rows.length === 0) {
+            return res.json({ 
+                success: true, 
+                data: [],
+                message: "No users found yet" 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            data: result.rows 
+        });
+
+    } catch (error) {
+        console.error("Leaderboard error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to fetch leaderboard" 
+        });
+    }
 });
 
 /* ===================== LOGOUT ===================== */
