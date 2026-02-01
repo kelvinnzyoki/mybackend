@@ -276,46 +276,6 @@ app.post("/auth/refresh", async (req, res) => {
 
 /* ===================== ALPHA DATA ROUTES ===================== */
 
-// STOIC AUDITS
-app.post("/api/audit/save", authenticate, async (req, res) => {
-    const { victory, defeat } = req.body;
-    try {
-        await pool.query(`
-            INSERT INTO audits (user_id, victory, defeat, updated_at)
-            VALUES ($1, $2, $3, NOW())
-            ON CONFLICT (user_id) 
-            DO UPDATE SET victory = EXCLUDED.victory, defeat = EXCLUDED.defeat, updated_at = NOW()
-        `, [req.user.id, victory, defeat]);
-        
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ success: false });
-    }
-});
-
-
-app.get('/api/audit/load', authenticate, async (req, res) => {
-    try {
-        const result = await pool.query(
-            "SELECT victory, defeat, focus, ego_control FROM audits WHERE user_id = $1", 
-            [req.user.id]
-        );
-
-        // If no record exists, return a complete default object
-        const data = result.rows[0] || { 
-            victory: "", 
-            defeat: "", 
-            focus: 50, 
-            ego_control: 50 
-        };
-
-        res.json(data);
-    } catch (err) {
-        console.error("Audit load error:", err);
-        res.status(500).json({ error: "Failed to load audit data" });
-    }
-});
-
 
 // RECOVERY LOGS
 app.post('/api/user/recovery', authenticate, async (req, res) => {
@@ -373,58 +333,113 @@ scoreTables.forEach(table => {
 });
 
 
-// POST a public victory to the arena (SEPARATE from mental audit)
+
+// ==================== ARENA FEED (PUBLIC) ====================
+
+// POST a public victory to arena
 app.post("/arena/post", authenticate, async (req, res) => {
-    const { victory_text } = req.body;
+    const { victory_text } = req.body;  // Frontend sends "victory_text"
     
     if (!victory_text || victory_text.trim() === "") {
-        return res.status(400).json({ success: false, message: "Victory text required" });
+        return res.status(400).json({ success: false, message: "Post text required" });
+    }
+
+    if (victory_text.length > 500) {
+        return res.status(400).json({ success: false, message: "Post too long (max 500 chars)" });
     }
 
     try {
-        // ✅ SAVE TO ARENA_POSTS TABLE (not audits)
+        // ✅ Insert into arena_posts.post_text (NOT audits.victory)
         await pool.query(
-            "INSERT INTO arena_posts (user_id, victory_text, created_at) VALUES ($1, $2, NOW())",
+            "INSERT INTO arena_posts (user_id, post_text, created_at) VALUES ($1, $2, NOW())",
             [req.user.id, victory_text.trim()]
         );
         
-        res.json({ success: true, message: "Victory posted to arena" });
+        res.json({ success: true, message: "Posted to arena" });
     } catch (err) {
         console.error("Arena post error:", err);
         res.status(500).json({ success: false, message: "Failed to post" });
     }
 });
 
-// GET public arena feed (ONLY from arena_posts, NOT audits)
+// GET arena feed
 app.get("/feed", authenticate, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
                 u.username,
-                ap.victory_text,
+                ap.post_text,      -- ✅ From arena_posts table
                 ap.created_at,
-                (
-                    SELECT COALESCE(SUM(score), 0) 
+                COALESCE((
+                    SELECT SUM(score) 
                     FROM (
                         SELECT score FROM pushups WHERE user_id = u.id
                         UNION ALL SELECT score FROM situps WHERE user_id = u.id
                         UNION ALL SELECT score FROM squats WHERE user_id = u.id
                         UNION ALL SELECT score FROM steps WHERE user_id = u.id
                         UNION ALL SELECT score FROM addictions WHERE user_id = u.id
-                    ) sub
-                ) as total_score
-            FROM arena_posts ap
+                    ) scores
+                ), 0) as total_score
+            FROM arena_posts ap             -- ✅ Only from arena_posts
             JOIN users u ON u.id = ap.user_id
             ORDER BY ap.created_at DESC
-            LIMIT 20
+            LIMIT 50
         `);
         
         res.json({ success: true, data: result.rows });
     } catch (err) {
         console.error("Feed error:", err);
-        res.status(500).json({ success: false, message: "Database Error" });
+        res.status(500).json({ success: false, message: "Failed to load feed" });
     }
 });
+
+// ==================== MENTAL AUDIT (PRIVATE) ====================
+
+// Save mental audit (UNCHANGED - stays completely separate)
+app.post("/api/audit/save", authenticate, async (req, res) => {
+    const { victory, defeat } = req.body;  // These are private reflections
+    
+    try {
+        await pool.query(`
+            INSERT INTO audits (user_id, victory, defeat, updated_at)
+            VALUES ($1, $2, $3, NOW())
+            ON CONFLICT (user_id) 
+            DO UPDATE SET 
+                victory = EXCLUDED.victory, 
+                defeat = EXCLUDED.defeat, 
+                updated_at = NOW()
+        `, [req.user.id, victory, defeat]);
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Audit save error:", err);
+        res.status(500).json({ success: false });
+    }
+});
+
+// Load mental audit (UNCHANGED - private to user only)
+app.get('/api/audit/load', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT victory, defeat, focus, ego_control FROM audits WHERE user_id = $1", 
+            [req.user.id]  // ✅ Only shows user's own data
+        );
+
+        const data = result.rows[0] || { 
+            victory: "", 
+            defeat: "", 
+            focus: 50, 
+            ego_control: 50 
+        };
+
+        res.json(data);
+    } catch (err) {
+        console.error("Audit load error:", err);
+        res.status(500).json({ error: "Failed to load audit data" });
+    }
+});
+
+
 
 
 app.get("/total-score", authenticate, async (req, res) => {
