@@ -416,7 +416,7 @@ app.get("/total-score", authenticate, async (req, res) => {
 
 
 
-app.get("/leaderboard", authenticateToken, async (req, res) => {
+app.get("/leaderboard", authenticate, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT u.username, SUM(s.score) AS total_score 
@@ -455,6 +455,7 @@ app.get("/leaderboard", authenticateToken, async (req, res) => {
         });
     }
 });
+
 
 /* ===================== LOGOUT ===================== */
 app.post("/logout", async (req, res) => {
