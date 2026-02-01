@@ -373,7 +373,7 @@ scoreTables.forEach(table => {
 });
 
 
-// POST a public victory to the arena (separate from mental audit)
+// POST a public victory to the arena (SEPARATE from mental audit)
 app.post("/arena/post", authenticate, async (req, res) => {
     const { victory_text } = req.body;
     
@@ -382,8 +382,9 @@ app.post("/arena/post", authenticate, async (req, res) => {
     }
 
     try {
+        // ✅ SAVE TO ARENA_POSTS TABLE (not audits)
         await pool.query(
-            "INSERT INTO arena_posts (user_id, victory_text) VALUES ($1, $2)",
+            "INSERT INTO arena_posts (user_id, victory_text, created_at) VALUES ($1, $2, NOW())",
             [req.user.id, victory_text.trim()]
         );
         
@@ -394,7 +395,7 @@ app.post("/arena/post", authenticate, async (req, res) => {
     }
 });
 
-// GET public arena feed (updated to use arena_posts table)
+// GET public arena feed (ONLY from arena_posts, NOT audits)
 app.get("/feed", authenticate, async (req, res) => {
     try {
         const result = await pool.query(`
@@ -412,9 +413,8 @@ app.get("/feed", authenticate, async (req, res) => {
                         UNION ALL SELECT score FROM addictions WHERE user_id = u.id
                     ) sub
                 ) as total_score
-            FROM users u
-            JOIN arena_posts ap ON u.id = ap.user_id
-            WHERE ap.victory_text IS NOT NULL AND ap.victory_text != ''
+            FROM arena_posts ap
+            JOIN users u ON u.id = ap.user_id
             ORDER BY ap.created_at DESC
             LIMIT 20
         `);
