@@ -373,14 +373,35 @@ scoreTables.forEach(table => {
 });
 
 
-// NEW: Get recent activity feed (scores + victories)
+// POST a public victory to the arena (separate from mental audit)
+app.post("/arena/post", authenticate, async (req, res) => {
+    const { victory_text } = req.body;
+    
+    if (!victory_text || victory_text.trim() === "") {
+        return res.status(400).json({ success: false, message: "Victory text required" });
+    }
+
+    try {
+        await pool.query(
+            "INSERT INTO arena_posts (user_id, victory_text) VALUES ($1, $2)",
+            [req.user.id, victory_text.trim()]
+        );
+        
+        res.json({ success: true, message: "Victory posted to arena" });
+    } catch (err) {
+        console.error("Arena post error:", err);
+        res.status(500).json({ success: false, message: "Failed to post" });
+    }
+});
+
+// GET public arena feed (updated to use arena_posts table)
 app.get("/feed", authenticate, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
                 u.username,
-                a.victory,
-                a.updated_at,
+                ap.victory_text,
+                ap.created_at,
                 (
                     SELECT COALESCE(SUM(score), 0) 
                     FROM (
@@ -392,9 +413,9 @@ app.get("/feed", authenticate, async (req, res) => {
                     ) sub
                 ) as total_score
             FROM users u
-            JOIN audits a ON u.id = a.user_id
-            WHERE a.victory IS NOT NULL AND a.victory != ''
-            ORDER BY a.updated_at DESC
+            JOIN arena_posts ap ON u.id = ap.user_id
+            WHERE ap.victory_text IS NOT NULL AND ap.victory_text != ''
+            ORDER BY ap.created_at DESC
             LIMIT 20
         `);
         
