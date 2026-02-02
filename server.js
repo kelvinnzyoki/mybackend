@@ -23,7 +23,6 @@ app.use(express.json());
 app.use(cors({
     origin: function(origin, callback) {
         const allowed = [
-            "https://kelvinnzyoki.github.io",
             "https://cctamcc.site",
             "http://cctamcc.site",
             "http://localhost:5500"
