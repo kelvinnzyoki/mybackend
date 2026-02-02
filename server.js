@@ -48,7 +48,7 @@ app.use(cors({
 const cookieOptions = {
     httpOnly: true,
     secure: true, // Required for HTTPS
-    sameSite: "Lax",
+    sameSite: "None",
     domain: ".cctamcc.site", 
     path: "/"
 };
