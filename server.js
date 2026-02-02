@@ -24,24 +24,32 @@ app.use(cors({
     origin: function(origin, callback) {
         const allowed = [
             "https://kelvinnzyoki.github.io",
+            "https://cctamcc.site",
+            "http://cctamcc.site",
             "http://localhost:5500"
         ];
         // Allow requests with no origin (mobile apps, curl, etc)
-        if (!origin || allowed.some(url => origin.startsWith(url))) {
+        if (!origin || allowed.includes(origin) || allowed.some(url => origin?.startsWith(url))) {
             callback(null, true);
         } else {
+            console.error('CORS blocked origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
-    methods: ["GET", "POST", "OPTIONS"]
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Set-Cookie"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
 
+// Cookie options - FIXED for cross-domain
 const cookieOptions = {
     httpOnly: true,
     secure: true, // Required for HTTPS
-    sameSite: "None", // Required for cross-domain cookies (GitHub Pages)
-    domain: process.env.COOKIE_DOMAIN || undefined,
+    sameSite: "None", // Required for cross-domain cookies
+    domain: undefined, // Don't set domain - let browser handle it
     path: "/"
 };
 
@@ -503,5 +511,6 @@ app.post("/logout", async (req, res) => {
 });
 
 
-  const PORT = process.env.PORT || 8080;
-  app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
+        
