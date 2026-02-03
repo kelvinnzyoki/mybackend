@@ -240,18 +240,26 @@ const scoreTables = ["addictions", "pushups", "situps", "squats", "steps"];
 scoreTables.forEach(table => {
     app.post(`/${table}`, authenticate, async (req, res) => {
         const { score, date } = req.body;
+        
+        // Use ONLY the YYYY-MM-DD part of the date
+        const cleanDate = date ? date : new Date().toISOString().split('T')[0];
+
         if (score === undefined || isNaN(score)) {
             return res.status(400).json({ success: false, message: "Valid score required" });
         }
 
         try {
+            // Ensure table name is sanitized/hardcoded in scoreTables array to prevent SQL injection
             await pool.query(
-                `INSERT INTO ${table} (user_id, date, score) VALUES ($1, $2, $3) ON CONFLICT (user_id, date) DO UPDATE SET score = EXCLUDED.score`,
-                [req.user.id, date || new Date(), parseInt(score)]
+                `INSERT INTO ${table} (user_id, date, score) 
+                 VALUES ($1, $2, $3) 
+                 ON CONFLICT (user_id, date) 
+                 DO UPDATE SET score = EXCLUDED.score`,
+                [req.user.id, cleanDate, parseInt(score)]
             );
             res.json({ success: true, message: `${table} score synced` });
         } catch (err) {
-            console.error(`Error in /${table}:`, err);
+            console.error(`❌ Error in /${table}:`, err.message);
             res.status(500).json({ success: false, message: "Database Error" });
         }
     });
