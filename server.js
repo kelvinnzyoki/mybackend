@@ -57,7 +57,8 @@ const cookieOptions = {
     httpOnly: true,
     secure: true,              // HTTPS only
     sameSite: "Lax",          // CRITICAL: Must be "None" for cross-subdomain
-    domain: ".cctamcc.site",   // Leading dot allows all subdomains
+    domain: ".cctamcc.site",
+    maxAge: 1209600000
     path: "/"
 };
 
