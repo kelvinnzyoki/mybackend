@@ -56,7 +56,7 @@ app.use(cors({
 const cookieOptions = {
     httpOnly: true,
     secure: true,              // HTTPS only
-    sameSite: "None",          // CRITICAL: Must be "None" for cross-subdomain
+    sameSite: "Lax",          // CRITICAL: Must be "None" for cross-subdomain
     domain: ".cctamcc.site",   // Leading dot allows all subdomains
     path: "/"
 };
