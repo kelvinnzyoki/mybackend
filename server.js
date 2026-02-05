@@ -19,7 +19,7 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(express.json());
 
-// ✅ FIXED: CORS for custom domain
+// CORS
 app.use(cors({
     origin: function(origin, callback) {
         const allowed = [
@@ -37,23 +37,23 @@ app.use(cors({
         }
     },
     credentials: true,
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     exposedHeaders: ["Set-Cookie"],
     preflightContinue: false,
     optionsSuccessStatus: 204
 }));
 
-// ✅ CRITICAL FIX: sameSite MUST be "None" for cross-subdomain
+// Cookies
 const cookieOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: "Lax",  // ✅ CHANGED FROM "Lax"
+    sameSite: "Lax",
     domain: ".cctamcc.site", 
     path: "/"
 };
 
-/* ===================== DATABASE ===================== */
+/* ===================== DATABASE PSTG and REDIS ===================== */
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: true }
@@ -61,7 +61,7 @@ const pool = new Pool({
 
 const redis = createClient({ url: process.env.REDIS_URL });
 redis.on('error', (err) => console.log('Redis Error', err));
-(async () => { await redis.connect(); console.log("✅ Redis Online"); })();
+(async () => { await redis.connect(); console.log("Redis Online"); })();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -94,6 +94,51 @@ const authenticate = async (req, res, next) => {
     });
 };
 
+// My Panel authentication middleware
+const authenticateAdmin = async (req, res, next) => {
+    const token = req.cookies.access_token;
+    if (!token) return res.status(401).json({ message: "Unauthenticated" });
+
+    jwt.verify(token, process.env.JWT_ACCESS_SECRET, async (err, decoded) => {
+        if (err) return res.status(403).json({ message: "Session Expired" });
+
+        try {
+            const result = await pool.query("SELECT role FROM users WHERE id = $1", [decoded.id]);
+            if (!result.rows[0] || result.rows[0].role !== 'admin') {
+                return res.status(403).json({ message: "Admin access required" });
+            }
+            req.user = decoded;
+            next();
+        } catch (e) { 
+            res.status(500).json({ message: "Auth Error" }); 
+        }
+    });
+};
+
+//  Activity logging helper
+const logActivity = async (userId, action, details = {}) => {
+    try {
+        await pool.query(
+            `INSERT INTO activity_logs (user_id, action, details, timestamp) 
+             VALUES ($1, $2, $3, NOW())`,
+            [userId, action, JSON.stringify(details)]
+        );
+        
+        // Store in Redis for real-time access (last 100 activities)
+        const activityData = JSON.stringify({
+            user_id: userId,
+            action,
+            details,
+            timestamp: new Date().toISOString()
+        });
+        
+        await redis.lPush('recent_activities', activityData);
+        await redis.lTrim('recent_activities', 0, 99); // Keep only last 100
+    } catch (err) {
+        console.error('Activity logging error:', err);
+    }
+};
+
 /* ===================== ROUTES ===================== */
 app.get("/", (req, res) => {
     res.status(200).json({
@@ -124,6 +169,10 @@ app.post("/send-code", rateLimit({ windowMs: 15*60*1000, max: 3 }), async (req, 
         });
         
         await redis.setEx(`verify:${key}`, 300, code);
+        
+        // Log verification email sent
+        await logActivity(null, 'verification_email_sent', { email });
+        
         res.json({ success: true });
     } catch (err) {
         console.error("Send code error:", err);
@@ -168,6 +217,9 @@ app.post("/signup", async (req, res) => {
         res.cookie("access_token", access, { ...cookieOptions, maxAge: 900000 });
         res.cookie("refresh_token", refresh, { ...cookieOptions, maxAge: 1209600000 });
 
+        // Log signup activity
+        await logActivity(newUser.rows[0].id, 'user_signup', { username, email });
+
         res.json({ success: true, message: "Account created successfully!", user: { username: newUser.rows[0].username }});
     } catch (err) {
         console.error("Signup error:", err);
@@ -195,6 +247,10 @@ app.post("/login", async (req, res) => {
 
     res.cookie("access_token", access, { ...cookieOptions, maxAge: 900000 });
     res.cookie("refresh_token", refresh, { ...cookieOptions, maxAge: 1209600000 });
+    
+    // Log login activity
+    await logActivity(user.id, 'user_login', { username: user.username });
+    
     res.json({ success: true, user: { username: user.username } });
 });
 
@@ -224,6 +280,10 @@ app.post('/api/user/recovery', authenticate, async (req, res) => {
         "INSERT INTO recovery_logs (user_id, sleep, hydration, stress, readiness_score, date) VALUES ($1, $2, $3, $4, $5, CURRENT_DATE) ON CONFLICT (user_id, date) DO UPDATE SET sleep=$2, hydration=$3, stress=$4, readiness_score=$5",
         [req.user.id, sleep, hydration, stress, score]
     );
+    
+    //  Log recovery data entry
+    await logActivity(req.user.id, 'recovery_log_updated', { sleep, hydration, stress, score });
+    
     res.json({ success: true });
 });
 
@@ -241,7 +301,6 @@ scoreTables.forEach(table => {
     app.post(`/${table}`, authenticate, async (req, res) => {
         const { score, date } = req.body;
         
-        // Use ONLY the YYYY-MM-DD part of the date
         const cleanDate = date ? date : new Date().toISOString().split('T')[0];
 
         if (score === undefined || isNaN(score)) {
@@ -249,7 +308,6 @@ scoreTables.forEach(table => {
         }
 
         try {
-            // Ensure table name is sanitized/hardcoded in scoreTables array to prevent SQL injection
             await pool.query(
                 `INSERT INTO ${table} (user_id, date, score) 
                  VALUES ($1, $2, $3) 
@@ -257,6 +315,10 @@ scoreTables.forEach(table => {
                  DO UPDATE SET score = EXCLUDED.score`,
                 [req.user.id, cleanDate, parseInt(score)]
             );
+            
+            //  Log score update
+            await logActivity(req.user.id, `${table}_score_updated`, { score, date: cleanDate });
+            
             res.json({ success: true, message: `${table} score synced` });
         } catch (err) {
             console.error(`❌ Error in /${table}:`, err.message);
@@ -279,6 +341,10 @@ app.post("/arena/post", authenticate, async (req, res) => {
             "INSERT INTO arena_posts (user_id, post_text, created_at) VALUES ($1, $2, NOW())",
             [req.user.id, victory_text.trim()]
         );
+        
+        //  Log arena post
+        await logActivity(req.user.id, 'arena_post_created', { post_length: victory_text.length });
+        
         res.json({ success: true, message: "Posted to arena" });
     } catch (err) {
         console.error("Arena post error:", err);
@@ -315,6 +381,10 @@ app.post("/api/audit/save", authenticate, async (req, res) => {
             INSERT INTO audits (user_id, victory, defeat, updated_at) VALUES ($1, $2, $3, NOW())
             ON CONFLICT (user_id) DO UPDATE SET victory = EXCLUDED.victory, defeat = EXCLUDED.defeat, updated_at = NOW()
         `, [req.user.id, victory, defeat]);
+        
+        // Log audit save
+        await logActivity(req.user.id, 'audit_updated', { victory_length: victory?.length, defeat_length: defeat?.length });
+        
         res.json({ success: true });
     } catch (err) {
         console.error("Audit save error:", err);
@@ -366,6 +436,173 @@ app.get("/leaderboard", authenticate, async (req, res) => {
     }
 });
 
+/* ===================== ADMIN ENDPOINTS ===================== */
+
+// Get dashboard stats
+app.get("/admin/stats", authenticateAdmin, async (req, res) => {
+    try {
+        const [users, recovery, audits, activities] = await Promise.all([
+            pool.query("SELECT COUNT(*) FROM users"),
+            pool.query("SELECT COUNT(*) FROM recovery_logs"),
+            pool.query("SELECT COUNT(*) FROM audits"),
+            pool.query("SELECT COUNT(*) FROM activity_logs")
+        ]);
+
+        res.json({
+            total_users: parseInt(users.rows[0].count),
+            total_recovery: parseInt(recovery.rows[0].count),
+            total_audits: parseInt(audits.rows[0].count),
+            total_activities: parseInt(activities.rows[0].count)
+        });
+    } catch (err) {
+        console.error("Admin stats error:", err);
+        res.status(500).json({ message: "Failed to fetch stats" });
+    }
+});
+
+//  Get all audits
+app.get("/admin/audits", authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT a.user_id, a.victory, a.defeat, a.updated_at, u.username
+            FROM audits a
+            JOIN users u ON u.id = a.user_id
+            ORDER BY a.updated_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Admin audits error:", err);
+        res.status(500).json({ message: "Failed to fetch audits" });
+    }
+});
+
+//  Delete audit
+app.delete("/admin/audit/:userId", authenticateAdmin, async (req, res) => {
+    try {
+        await pool.query("DELETE FROM audits WHERE user_id = $1", [req.params.userId]);
+        await logActivity(req.user.id, 'admin_audit_deleted', { deleted_user_id: req.params.userId });
+        res.json({ success: true, message: "Audit deleted" });
+    } catch (err) {
+        console.error("Admin delete audit error:", err);
+        res.status(500).json({ message: "Failed to delete audit" });
+    }
+});
+
+// Get recent activities (live tracking)
+app.get("/admin/activities", authenticateAdmin, async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const result = await pool.query(`
+            SELECT al.*, u.username
+            FROM activity_logs al
+            LEFT JOIN users u ON u.id = al.user_id
+            ORDER BY al.timestamp DESC
+            LIMIT $1
+        `, [limit]);
+        
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Admin activities error:", err);
+        res.status(500).json({ message: "Failed to fetch activities" });
+    }
+});
+
+//  Get real-time activities from Redis
+app.get("/admin/activities/realtime", authenticateAdmin, async (req, res) => {
+    try {
+        const activities = await redis.lRange('recent_activities', 0, 49);
+        const parsed = activities.map(a => JSON.parse(a));
+        res.json(parsed);
+    } catch (err) {
+        console.error("Real-time activities error:", err);
+        res.status(500).json({ message: "Failed to fetch real-time activities" });
+    }
+});
+
+//  Get user list with stats
+app.get("/admin/users", authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                u.id, 
+                u.username, 
+                u.email, 
+                u.created_at,
+                u.role,
+                COALESCE((SELECT SUM(score) FROM (
+                    SELECT score FROM pushups WHERE user_id = u.id
+                    UNION ALL SELECT score FROM situps WHERE user_id = u.id
+                    UNION ALL SELECT score FROM squats WHERE user_id = u.id
+                    UNION ALL SELECT score FROM steps WHERE user_id = u.id
+                    UNION ALL SELECT score FROM addictions WHERE user_id = u.id
+                ) scores), 0) as total_score,
+                (SELECT COUNT(*) FROM arena_posts WHERE user_id = u.id) as post_count,
+                (SELECT MAX(timestamp) FROM activity_logs WHERE user_id = u.id) as last_active
+            FROM users u
+            ORDER BY u.created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Admin users error:", err);
+        res.status(500).json({ message: "Failed to fetch users" });
+    }
+});
+
+// Delete user (moderation)
+app.delete("/admin/user/:userId", authenticateAdmin, async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        
+        // Delete user and cascade
+        await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+        
+        await logActivity(req.user.id, 'admin_user_deleted', { deleted_user_id: userId });
+        res.json({ success: true, message: "User deleted" });
+    } catch (err) {
+        console.error("Admin delete user error:", err);
+        res.status(500).json({ message: "Failed to delete user" });
+    }
+});
+
+// Get activity stats by type
+app.get("/admin/activity-stats", authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                action, 
+                COUNT(*) as count,
+                MAX(timestamp) as last_occurrence
+            FROM activity_logs
+            WHERE timestamp > NOW() - INTERVAL '7 days'
+            GROUP BY action
+            ORDER BY count DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Activity stats error:", err);
+        res.status(500).json({ message: "Failed to fetch activity stats" });
+    }
+});
+
+// Get user growth over time
+app.get("/admin/user-growth", authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as signups
+            FROM users
+            WHERE created_at > NOW() - INTERVAL '30 days'
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("User growth error:", err);
+        res.status(500).json({ message: "Failed to fetch user growth" });
+    }
+});
+
 app.post("/logout", async (req, res) => {
     const ref = req.cookies.refresh_token;
     if (ref) await redis.del(`ref:${ref}`);
@@ -375,5 +612,4 @@ app.post("/logout", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
-            
+app.listen(PORT, "0.0.0.0", () => console.log(`Server on port ${PORT}`));
