@@ -217,6 +217,23 @@ app.post("/signup", async (req, res) => {
         res.cookie("access_token", access, { ...cookieOptions, maxAge: 900000 });
         res.cookie("refresh_token", refresh, { ...cookieOptions, maxAge: 1209600000 });
 
+
+        if (!username || username.length < 3) {
+        return res.json({ available: false, message: 'Username too short' });
+        }
+        
+        try {
+        const result = await db.query(
+            'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+            [username]
+        );
+        
+        res.json({ available: result.rows.length === 0 });
+    } catch (err) {
+        console.error('Username check error:', err);
+        res.status(500).json({ available: null, message: 'Error checking username' });
+    
+
         // Log signup activity
         await logActivity(newUser.rows[0].id, 'user_signup', { username, email });
 
@@ -227,6 +244,28 @@ app.post("/signup", async (req, res) => {
             return res.status(409).json({ success: false, message: "Email or username already exists" });
         }
         res.status(500).json({ success: false, message: "Server error. Please try again." });
+    }
+});
+
+
+// Check username availability
+app.post('/check-username', async (req, res) => {
+    const { username } = req.body;
+    
+    if (!username || username.length < 3) {
+        return res.json({ available: false, message: 'Username too short' });
+    }
+    
+    try {
+        const result = await db.query(
+            'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+            [username]
+        );
+        
+        res.json({ available: result.rows.length === 0 });
+    } catch (err) {
+        console.error('Username check error:', err);
+        res.status(500).json({ available: null, message: 'Error checking username' });
     }
 });
 
