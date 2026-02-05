@@ -182,71 +182,77 @@ app.post("/send-code", rateLimit({ windowMs: 15*60*1000, max: 3 }), async (req, 
 
 app.post("/signup", async (req, res) => {
     const { email, code, username, password, dob } = req.body;
+
+    // 1. Validation (Must be first!)
+    if (!username || username.length < 3) {
+        return res.status(400).json({ success: false, message: 'Username must be at least 3 characters' });
+    }
+    if (!password || password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Password too weak' });
+    }
+
     const key = getHash(email);
 
     try {
+        // 2. Verify Redis Code
         const storedCode = await redis.get(`verify:${key}`);
         if (!storedCode || storedCode !== code) {
             return res.status(400).json({ message: "Invalid or expired verification code" });
         }
 
+        // 3. Check for existing user (Using 'pool' per your config)
         const existingEmail = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
         if (existingEmail.rows.length > 0) {
             await redis.del(`verify:${key}`);
-            return res.status(409).json({ success: false, message: "This email is already registered. Please login instead." });
+            return res.status(409).json({ success: false, message: "This email is already registered." });
         }
 
-        const existingUsername = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
+        const existingUsername = await pool.query("SELECT id FROM users WHERE LOWER(username) = LOWER($1)", [username]);
         if (existingUsername.rows.length > 0) {
-            return res.status(409).json({ success: false, message: "Username already taken. Please choose another." });
+            return res.status(409).json({ success: false, message: "Username already taken." });
         }
 
+        // 4. Create User
         const hashed = await bcrypt.hash(password, 12);
         const newUser = await pool.query(
             "INSERT INTO users (username, email, password, dob) VALUES ($1, $2, $3, $4) RETURNING id, username",
             [username, email, hashed, dob]
         );
         
+        const user = newUser.rows[0];
+
+        // 5. Cleanup & Tokens
         await redis.del(`verify:${key}`);
-        const access = createAccessToken(newUser.rows[0]);
-        const refresh = createRefreshToken(newUser.rows[0]);
+        const access = createAccessToken(user);
+        const refresh = createRefreshToken(user);
 
-        await redis.set(`ref:${refresh}`, newUser.rows[0].id, { EX: 1209600 });
-        await redis.set(`fp:${newUser.rows[0].id}`, req.headers["user-agent"] + req.ip);
+        await redis.set(`ref:${refresh}`, user.id, { EX: 1209600 });
+        await redis.set(`fp:${user.id}`, req.headers["user-agent"] + req.ip);
 
+        // 6. Set Cookies
         res.cookie("access_token", access, { ...cookieOptions, maxAge: 900000 });
         res.cookie("refresh_token", refresh, { ...cookieOptions, maxAge: 1209600000 });
 
-
-        if (!username || username.length < 3) {
-        return res.json({ available: false, message: 'Username too short' });
+        // 7. Log Activity (Make sure logActivity is defined in server.js)
+        if (typeof logActivity === 'function') {
+            await logActivity(user.id, 'user_signup', { username, email });
         }
-        
-        try {
-        const result = await db.query(
-            'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
-            [username]
-        );
-        
-        res.json({ available: result.rows.length === 0 });
-    } catch (err) {
-        console.error('Username check error:', err);
-        res.status(500).json({ available: null, message: 'Error checking username' });
-    
 
-        // Log signup activity
-        await logActivity(newUser.rows[0].id, 'user_signup', { username, email });
+        // 8. Final Success Response (Only one response!)
+        res.json({ 
+            success: true, 
+            message: "Account created successfully!", 
+            user: { username: user.username }
+        });
 
-        res.json({ success: true, message: "Account created successfully!", user: { username: newUser.rows[0].username }});
     } catch (err) {
         console.error("Signup error:", err);
         if (err.code === '23505') {
             return res.status(409).json({ success: false, message: "Email or username already exists" });
         }
-        res.status(500).json({ success: false, message: "Server error. Please try again." });
+        res.status(500).json({ success: false, message: "Server error during registration." });
     }
 });
-
 
 // Check username availability
 app.post('/check-username', async (req, res) => {
