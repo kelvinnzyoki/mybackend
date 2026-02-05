@@ -263,7 +263,7 @@ app.post('/check-username', async (req, res) => {
     }
     
     try {
-        const result = await db.query(
+        const result = await pool.query(
             'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
             [username]
         );
