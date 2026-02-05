@@ -256,6 +256,23 @@ app.post("/signup", async (req, res) => {
 
 // Check username availability
 app.post('/check-username', async (req, res) => {
+
+
+    // Check if they already have a valid session cookie
+    if (req.cookies.access_token) {
+        try {
+            jwt.verify(req.cookies.access_token, process.env.JWT_ACCESS_SECRET);
+            return res.status(400).json({ 
+                success: false, 
+                message: "You are already logged in to an active session." 
+            });
+        } catch (e) {
+            // Token is invalid/expired, so we proceed with login
+        }
+    }
+
+
+    
     const { username } = req.body;
     
     if (!username || username.length < 3) {
