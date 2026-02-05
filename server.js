@@ -26,7 +26,7 @@ app.use(cors({
             "https://cctamcc.site",
             "http://cctamcc.site",
             "https://www.cctamcc.site",
-            "http://localhost:5500"
+            "http://localhost:5500",
             "https://kelvinnzyoki.github.io.Admin"
         ];
         
