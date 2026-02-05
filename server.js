@@ -27,6 +27,7 @@ app.use(cors({
             "http://cctamcc.site",
             "https://www.cctamcc.site",
             "http://localhost:5500"
+            "https://kelvinnzyoki.github.io.Admin"
         ];
         
         if (!origin || allowed.includes(origin)) {
