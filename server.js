@@ -24,10 +24,9 @@ app.use(cors({
     origin: function(origin, callback) {
         const allowed = [
             "https://cctamcc.site",
-            "http://cctamcc.site",
             "https://www.cctamcc.site",
             "http://localhost:5500",
-            "https://kelvinnzyoki.github.io/Admin"
+            "https://admin.cctamcc.site"
         ];
         
         if (!origin || allowed.includes(origin)) {
