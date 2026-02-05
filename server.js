@@ -162,10 +162,10 @@ app.post("/send-code", rateLimit({ windowMs: 15*60*1000, max: 3 }), async (req, 
         const key = getHash(email);
 
         await resend.emails.send({
-            from: "noreply@cctamcc.site",
+            from: "tam@cctamcc.site",
             to: email,
-            subject: "Alpha Protocol Code",
-            html: `Your verification code is: <strong>${code}</strong>`
+            subject: "To Alpha Man Code",
+            html: `Your TAM verification code is: <strong>${code}</strong>`
         });
         
         await redis.setEx(`verify:${key}`, 300, code);
